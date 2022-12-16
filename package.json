@@ -1,42 +1,32 @@
 {
-  "name": "@neume-network/core",
+  "name": "@attestate/crawler",
   "version": "0.1.0",
-  "description": "neume network is a community-owned network to scale music and web3 - connecting Artist DAOs, Tokens, NFTs and whatever comes next.",
+  "description": "@attestate/crawler is a tool chain to retrieve on-chain data from Ethereum.",
   "main": "./src/boot.mjs",
   "bin": {
-    "neume": "neume.mjs"
+    "crawler": "crawler.mjs"
   },
   "scripts": {
     "postinstall": "git submodule sync && git submodule update --init && cd ./src/strategies && npm install",
     "test": "ava --verbose --timeout=20s",
-    "dev": "DEBUG=* ./neume.mjs --path crawl_path.mjs --config config.mjs",
+    "dev": "DEBUG=* ./crawler.mjs --path crawl_path.mjs --config config.mjs",
     "dev:silent": "node ./src/boot.mjs",
     "prepare": "husky install"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/neume-network/neume-network-core.git"
+    "url": "git+https://github.com/attestate/crawler.git"
   },
-  "keywords": [
-    "open",
-    "data",
-    "music",
-    "decentralized",
-    "web3",
-    "artists",
-    "DAO",
-    "tokens",
-    "nfts"
-  ],
+  "keywords": ["data", "retrieval", "on-chain", "NFTs", "ethereum"],
   "author": "Tim Daubenschütz <tim@daubenschuetz.de> (https://timdaub.github.io/)",
   "license": "GPL-3.0-only",
   "bugs": {
-    "url": "https://github.com/neume-network/neume-network-core/issues"
+    "url": "https://github.com/attestate/crawler/issues"
   },
-  "homepage": "https://github.com/neume-network/neume-network-core#readme",
+  "homepage": "https://github.com/attestate/crawler#readme",
   "dependencies": {
-    "@neume-network/extraction-worker": "0.7.1",
-    "@neume-network/schema": "0.8.1",
+    "@attestate/worker": "0.7.1",
+    "@attestate/crawler-schema": "0.8.1",
     "ajv": "8.11.0",
     "ajv-formats": "2.1.1",
     "debug": "4.3.4",
@@ -52,15 +42,10 @@
     "prettier": "2.6.2"
   },
   "ava": {
-    "files": [
-      "!src/strategies"
-    ],
-    "nodeArguments": [
-      "--loader=esmock",
-      "--no-warnings"
-    ],
+    "files": ["!src/strategies"],
+    "nodeArguments": ["--loader=esmock", "--no-warnings"],
     "environmentVariables": {
-      "DEBUG": "neume-network-core:*",
+      "DEBUG": "attestate/crawler:*",
       "RPC_HTTP_HOST": "https://cloudflare-eth.com",
       "RPC_API_KEY": "ABC",
       "DATA_DIR": "data",
@@ -68,9 +53,7 @@
       "IPFS_HTTPS_GATEWAY": "https://cloudflare-ipfs.com/ipfs/",
       "ARWEAVE_HTTPS_GATEWAY": "https://arweave.net"
     },
-    "require": [
-      "dotenv/config"
-    ]
+    "require": ["dotenv/config"]
   },
   "lint-staged": {
     "*.{mjs,js,css,md}": "prettier --write"

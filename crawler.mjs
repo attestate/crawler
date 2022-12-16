@@ -17,7 +17,7 @@ const argv = yargs(hideBin(process.argv))
   .describe("path", "Sequence of strategies that the crawler will follow.")
   .nargs("path", 1)
   .demandOption("path")
-  .describe("config", "Configuration for neume CLI")
+  .describe("config", "Configuration for CLI")
   .nargs("config", 1).argv;
 
 (async () => {

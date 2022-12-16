@@ -5,7 +5,7 @@ import test from "ava";
 import {
   config as configSchema,
   crawlPath as crawlPathSchema,
-} from "@neume-network/schema";
+} from "@attestate/crawler-schema";
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
 

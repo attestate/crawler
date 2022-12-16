@@ -6,8 +6,8 @@ import { boot, createWorker, getConfig } from "../src/boot.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-test.serial("if neume boot can be started programmatically", async (t) => {
-  const crawlPath = [[{ name: "music-os-accumulator", extractor: {} }]];
+test.serial("if boot can be started programmatically", async (t) => {
+  const crawlPath = [[{ name: "get-xkcd", extractor: {} }]];
   const config = {
     queue: {
       options: {
@@ -19,7 +19,7 @@ test.serial("if neume boot can be started programmatically", async (t) => {
   t.pass();
 });
 
-test.serial("if neume boot can throw errors", async (t) => {
+test.serial("if boot can throw errors", async (t) => {
   const crawlPath = [[{ name: "doesn't exist", extractor: {} }]];
   const config = {
     queue: {
