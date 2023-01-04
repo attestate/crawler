@@ -7,17 +7,16 @@ export default [
   [
     {
       name: "call-block-logs",
+      extractor: {
+        args: [16335993, 16335994],
+      },
       transformer: {
         output: {
           resolve: true,
         },
         args: [
           resolve(env.DATA_DIR, "call-block-logs-extraction"),
-          {
-            "0xf5819e27b9bad9f97c177bf007c1f96f26d91ca6": {
-              name: "noizd",
-            },
-          },
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
         ],
       },
     },

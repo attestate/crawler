@@ -3,7 +3,7 @@ import "dotenv/config";
 import { Worker } from "worker_threads";
 import { resolve } from "path";
 import { env } from "process";
-import { config as configSchema } from "@attestate/crawler-schema";
+import { config as configSchema } from "@neume-network/schema";
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
 

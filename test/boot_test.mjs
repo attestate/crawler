@@ -1,6 +1,7 @@
+// @format
+import test from "ava";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
-import test from "ava";
 
 import { boot, createWorker, getConfig } from "../src/boot.mjs";
 
@@ -35,7 +36,7 @@ test.serial("should be able to create worker", (t) => {
   return new Promise((resolve, reject) => {
     createWorker({ queue: { options: { concurrent: 10 } } }).then((w) => {
       setTimeout(() => {
-        // no error has occured until now, safe to pass the test
+        // NOTE: no error has occured until now, safe to pass the test
         t.pass();
         resolve();
       }, 1000);

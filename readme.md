@@ -91,7 +91,7 @@ Options:
 
 A crawl path defines what strategies are executed by the crawler and in what
 order. It can be defined as an `.mjs` file and must follow a particular schema.
-Check `attestate/crawler-schema` for more information.
+Check `@neume-network/schema` for more information.
 
 ## license
 

@@ -25,8 +25,8 @@
   },
   "homepage": "https://github.com/attestate/crawler#readme",
   "dependencies": {
-    "@attestate/worker": "0.7.1",
-    "@attestate/crawler-schema": "0.8.1",
+    "@neume-network/extraction-worker": "0.7.1",
+    "@neume-network/schema": "0.9.0",
     "ajv": "8.11.0",
     "ajv-formats": "2.1.1",
     "debug": "4.3.4",
@@ -45,7 +45,7 @@
     "files": ["!src/strategies"],
     "nodeArguments": ["--loader=esmock", "--no-warnings"],
     "environmentVariables": {
-      "DEBUG": "attestate/crawler:*",
+      "DEBUG": "attestate*",
       "RPC_HTTP_HOST": "https://cloudflare-eth.com",
       "RPC_API_KEY": "ABC",
       "DATA_DIR": "data",
