@@ -14,6 +14,10 @@ jobs:
       matrix:
         node-version: [14.x]
     steps:
+     # An SSH key pair has to be configured for npm scripts to clone the strategies submodule.
+     - uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
       - uses: actions/checkout@v3
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
