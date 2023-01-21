@@ -7,7 +7,6 @@
     "crawler": "crawler.mjs"
   },
   "scripts": {
-    "postinstall": "git submodule sync && git submodule update --init && cd ./src/strategies && npm install",
     "test": "ava --verbose --timeout=20s",
     "dev": "DEBUG=* ./crawler.mjs --path crawl_path.mjs --config config.mjs",
     "dev:silent": "node ./src/boot.mjs",
@@ -47,9 +46,6 @@
     "prettier": "2.6.2"
   },
   "ava": {
-    "files": [
-      "!src/strategies"
-    ],
     "nodeArguments": [
       "--loader=esmock",
       "--no-warnings"
