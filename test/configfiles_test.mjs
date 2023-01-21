@@ -2,12 +2,13 @@
 import { resolve } from "path";
 
 import test from "ava";
+import Ajv from "ajv";
+import addFormats from "ajv-formats";
+
 import {
   config as configSchema,
   crawlPath as crawlPathSchema,
-} from "@neume-network/schema";
-import Ajv from "ajv";
-import addFormats from "ajv-formats";
+} from "../src/schema.mjs";
 
 test("if distributed example config complies to schema", async (t) => {
   const config = (await import(resolve("./config.mjs"))).default;

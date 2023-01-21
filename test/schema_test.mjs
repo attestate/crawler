@@ -19,19 +19,6 @@ import {
 const ajv = new Ajv();
 addFormats(ajv);
 
-test.skip("validating a manifestation with a non-registered mimetype", (t) => {
-  const check = ajv.compile(manifestation);
-  const version = "0.0.1";
-  const example = {
-    version,
-    uri: "https://example.com/song",
-    mimetype: "audio/non-existent",
-  };
-  const valid = check(example);
-  t.truthy(check.errors);
-  t.false(valid);
-});
-
 test("compile schema", (t) => {
   ajv.compile(version);
   ajv.compile(config);
@@ -84,60 +71,67 @@ test("should be an invalid config", (t) => {
 test("should be a valid crawlPath", (t) => {
   const check = ajv.compile(crawlPath);
   const example = [
-    [
-      {
-        name: "web3subgraph",
-        extractor: {},
-        transformer: {},
-      },
-    ],
-    [
-      {
-        name: "soundxyz-call-tokenuri",
-        extractor: {
-          args: ["web3subgraph-transformation"],
+    {
+      name: "a strategy",
+      extractor: {
+        module: {
+          init: () => {},
+          update: () => {},
         },
-        transformer: {},
-      },
-      {
-        name: "zora-call-tokenuri",
-        extractor: {
-          args: ["web3subgraph-transformation"],
+        args: [],
+        output: {
+          path: "output",
         },
       },
-      {
-        name: "zora-call-tokenmetadatauri",
-        transformer: {
-          args: ["path/to/file", "arg1"],
+      transformer: {
+        module: {
+          onLine: () => {},
+        },
+        args: [],
+        input: {
+          path: "input",
+        },
+        output: {
+          path: "output",
         },
       },
-    ],
+      loader: {
+        handler: () => {},
+        input: {
+          path: "input",
+        },
+      },
+    },
+    {
+      name: "another name",
+      extractor: {
+        module: {
+          init: () => {},
+          update: () => {},
+        },
+        args: [],
+        output: {
+          path: "output",
+        },
+      },
+      transformer: {
+        module: {
+          onLine: () => {},
+        },
+        args: [],
+        input: {
+          path: "input",
+        },
+        output: {
+          path: "output",
+        },
+      },
+    },
   ];
 
   const valid = check(example);
+  if (!valid) t.log(check.errors);
   t.true(valid);
-});
-
-test.skip("if crawl path validator throws if transformer.args[0] isn't a string", (t) => {
-  // NOTE: We implicitly encode the first argument as the path to a file that
-  // the transformer processes so it has to be a string.
-  const check = ajv.compile(crawlPath);
-  const notAString = 1234;
-  const example = [
-    [
-      {
-        name: "web3subgraph",
-        transformer: {
-          args: [notAString, notAString],
-        },
-      },
-    ],
-  ];
-
-  const valid = check(example);
-  t.false(valid);
-  t.true(check.errors[0].instancePath.includes("transformer/args/0"));
-  t.is(check.errors[0].message, "must be string");
 });
 
 test("should be a valid ipfs message", (t) => {

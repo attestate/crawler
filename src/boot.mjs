@@ -3,13 +3,13 @@ import "dotenv/config";
 import { Worker } from "worker_threads";
 import { resolve } from "path";
 import { env } from "process";
-import { config as configSchema } from "@neume-network/schema";
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
 
+import { config as configSchema } from "./schema.mjs";
 import { __dirname } from "./node_filler.mjs";
 import logger from "./logger.mjs";
-import * as strategies from "./strategies/src/index.mjs";
+import { init } from "./lifecycle.mjs";
 import * as environment from "./environment.mjs";
 import * as disc from "./disc.mjs";
 
@@ -42,5 +42,5 @@ export async function createWorker(config) {
 
 export async function boot(crawlPath, config) {
   const worker = await createWorker(config);
-  return await strategies.run(worker, crawlPath);
+  return await init(worker, crawlPath);
 }

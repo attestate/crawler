@@ -1,5 +1,6 @@
 // @format
 import test from "ava";
+import { env } from "process";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 
@@ -8,7 +9,45 @@ import { boot, createWorker, getConfig } from "../src/boot.mjs";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 test.serial("if boot can be started programmatically", async (t) => {
-  const crawlPath = [[{ name: "get-xkcd", extractor: {} }]];
+  let hitInit = false;
+  let hitUpdate = false;
+  const crawlPath = [
+    {
+      name: "customstrategy",
+      extractor: {
+        module: {
+          init: () => {
+            hitInit = true;
+            return {
+              write: null,
+              messages: [
+                {
+                  type: "json-rpc",
+                  method: "eth_blockNumber",
+                  params: [],
+                  version: "0.0.1",
+                  options: {
+                    url: env.RPC_HTTP_HOST,
+                  },
+                },
+              ],
+            };
+          },
+          update: () => {
+            hitUpdate = true;
+            return {
+              write: null,
+              messages: [],
+            };
+          },
+        },
+        args: [],
+        output: {
+          path: "output",
+        },
+      },
+    },
+  ];
   const config = {
     queue: {
       options: {
@@ -17,11 +56,12 @@ test.serial("if boot can be started programmatically", async (t) => {
     },
   };
   await boot(crawlPath, config);
-  t.pass();
+  t.true(hitInit);
+  t.true(hitUpdate);
 });
 
 test.serial("if boot can throw errors", async (t) => {
-  const crawlPath = [[{ name: "doesn't exist", extractor: {} }]];
+  const crawlPath = [{ name: "doesn't exist", extractor: {} }];
   const config = {
     queue: {
       options: {
