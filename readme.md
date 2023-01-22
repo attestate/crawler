@@ -17,6 +17,6 @@ by the community instead of a single entity. Branded as the "Neume Network",
 the Attestate Crawler codebase has successfully been used to download the
 metadata of the music NFT ecosystem.
 
-- **[Getting Started](https://attestate.com/crawler/getting-started.html)**
-- Documentation: [attestate.com/crawler](https://attestate.com/crawler)
+- **[Getting Started](https://attestate.com/crawler/main/getting-started.html)**
+- Documentation: [attestate.com/crawler/main](https://attestate.com/crawler/main)
 - License: [SPDX-License-Identifier: GPL-3.0-only](https://spdx.org/licenses/GPL-3.0-only.html)
