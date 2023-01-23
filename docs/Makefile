@@ -6,6 +6,10 @@ deploy:
 html:
 	sphinx-multiversion source build/html
 
+.PHONY: build
+build:
+	sphinx-build -b html source build
+
 .PHONY: serve
 serve:
-	python3 -m http.server -d build/html
+	make build && python3 -m http.server -d build
