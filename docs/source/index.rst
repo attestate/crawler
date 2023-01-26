@@ -4,10 +4,9 @@
 A JavaScript library for retrieving on-chain storage and generating data
 derivatives.
 
-* **Modular:** `Extract, Transform and Load
-  <https://en.wikipedia.org/wiki/Extract,_transform,_load>`_ stage separation
-  makes composing simple components into complex workflows possible. Stages are
-  reunnable to recover errors.
+* **Modular:** :ref:`Extract, Transform and Load <extract-transform-load>`
+  stage separation makes composing simple components into complex workflows
+  possible. Stages are reunnable to recover errors.
 * **Embedded:** Unlike Graph Protocol, attestate's crawler does not have a
   separate server process. It can directly write to self-contained databases
   like LevelDB or sqlite.
@@ -63,8 +62,7 @@ For a more in-depth discussion of uses cases, visit the :ref:`use cases <use-cas
 
 Features
 --------
-
-* Rerunnable crawls using Extract, Transform and Load stage separation
+* Rerunnable crawls using :ref:`Extract, Transform and Load <extract-transform-load>` stage separation
 * Fast: GB/s extraction from Ethereum (co-located Erigon)
 * Database-agnostic: LevelDB, sqlite, PostgreSQL, etc.
 * Rate-limiting support for Infura & Alchemy
@@ -85,13 +83,13 @@ Table of Contents
 -----------------
 
 .. toctree::
-  :caption: Information
+  :caption: Concepts
 
   use-cases
+  extract-transform-load
 
 .. toctree::
   :caption: Basics
 
   getting-started
   configuration
-

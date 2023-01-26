@@ -76,3 +76,9 @@ directory.
     --version  Show version number                                       [boolean]
     --path     Sequence of strategies that the crawler will follow.     [required]
     --config   Configuration for CLI
+
+Configuring Your First Crawl
+----------------------------
+
+To run a crawl, next up, :ref:`configure the crawl path
+<configuration-crawl-path>`.
