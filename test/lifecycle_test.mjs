@@ -12,7 +12,6 @@ import {
   transform,
   EXTRACTOR_CODES,
   prepareMessages,
-  validateCrawlPath,
 } from "../src/lifecycle.mjs";
 import {
   ValidationError,
@@ -331,31 +330,4 @@ test("if prepareMessages filters invalid message and prepare message for worker"
 
 test("if filterValidWorkerMessages throws error on invalid input", async (t) => {
   t.throws(() => prepareMessages(null));
-});
-
-test("validateCrawlPath works for happy case", (t) => {
-  const crawlPath = [
-    {
-      name: "a name",
-      extractor: {
-        output: {
-          path: "path",
-        },
-        args: [],
-        module: {
-          init: () => {
-            return { messages: [], write: "some-test-data" };
-          },
-          update: () => {
-            return null;
-          },
-        },
-      },
-    },
-  ];
-  t.notThrows(() => validateCrawlPath(crawlPath));
-});
-
-test("validateCrawlPath throws for empty crawl path", (t) => {
-  t.throws(() => validateCrawlPath([]));
 });

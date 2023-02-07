@@ -55,7 +55,6 @@
       "RPC_HTTP_HOST": "https://cloudflare-eth.com",
       "RPC_API_KEY": "ABC",
       "DATA_DIR": "data",
-      "EXTRACTION_WORKER_CONCURRENCY": "12",
       "IPFS_HTTPS_GATEWAY": "https://cloudflare-ipfs.com/ipfs/",
       "ARWEAVE_HTTPS_GATEWAY": "https://arweave.net"
     },

@@ -5,6 +5,18 @@ Compared to other tools that may help you replicate Ethereum state locally,
 Attestate's crawler comes with plenty of configuration options. This page's
 purpose is to serve as a reference for all configurable options.
 
+Overview
+--------
+
+There are two files which we are using to configure the crawler:
+
+* a ``.env`` file defines all environmental variables. We've built the crawler
+  such that only variables go into it that aren't supposed to be checked into
+  version control, e.g. your Infura API key.
+* a ``config.mjs`` file that contains a sharable set up of crawler instructions.
+
+First, let's walk you throught the ``.env`` file.
+
 ..  _configuration-environment-variables:
 
 Environment Variables
@@ -23,25 +35,64 @@ to run:
 * ``RPC_HTTP_HOST`` describes the host that Ethereum JSON-RPC extraction request are made against. It must be set to an URL to an Ethereum full node's JSON-RPC endpoint that starts with ``https://``. ``ws://`` or ``wss://`` prefixes are currently not supported. We support URLs that include the API's bearer token as is the case with, e.g., Infura or Alchemy.
 *  ``RPC_API_KEY`` is the API key for the host extraction requests are made against. It must be set if an Ethereum full node was provisioned behind an HTTP proxy that requires a bearer token authorization via the HTTP ``Authorization`` header. In this case, the header is structurally set as follows: ``Authorization: Bearer ${RPC_API_KEY}``.
 * ``DATA_DIR`` is the directory that stores all results from extraction and transformation of the crawler. It must be set to a file system path (relative or absolute).
-* ``EXTRACTION_WORKER_CONCURRENCY`` is the number of simultaneous requests the extraction worker will make against ``RPC_HTTP_HOST``. It must be an integer value and it cannot be smaller than `1`.
 * ``IPFS_HTTPS_GATEWAY`` describes the host that IPFS extraction requests are made against. A list of publicly accessible IPFS gateways can be found `here <https://ipfs.github.io/public-gateway-checker/>`_.
 *  ``IPFS_HTTPS_GATEWAY_KEY`` is the API key for the IPFS host extraction requests are made against. It must be set if an IPFS node was provisioned behind an HTTP proxy that requires a bearer token authorization via the HTTP ``Authorization`` header. In this case, the header is structurally set as follows: ``Authorization: Bearer ${IPFS_HTTPS_GATEWAY_KEY}``.
 * ``ARWEAVE_HTTPS_GATEWAY`` describes the host that Arweave extraction requests are made against. A commonly-used Arweave gateway is ``https://arweave.net``.
 
+.. note::
+   In some cases, you may only work with Ethereum, however, the crawler will
+   complain if, e.g., ``IPFS_HTTPS_GATEWAY`` isn't defined. Also, some Ethereum
+   full node providers will append the API key in the ``RPC_HTTP_HOST`` URI. In
+   those cases it is sufficient to define those variables as an empty string:
+   ``RPC_API_KEY=""``.
+
 ..  _configuration-crawl-path:
 
-Crawl Path
-----------
+Configuration File
+------------------
 
-The crawl path is a ``.mjs`` file that, using ESM's ``export default``, exports
-a list of tasks to be run. The crawl path is normatively specified as a JSON
-schema in the `code base
-<https://github.com/attestate/crawler/blob/main/src/schema.mjs>`_. Structurally,
-a crawl path file looks like this:
+The configuration file is a ``.mjs`` that, using ESM's ``export default``,
+exports a list of tasks to be run. It is normatively specified as a JSON schema
+in the `code base
+<https://github.com/attestate/crawler/blob/main/src/schemata/configuration.mjs>`_.
+
+The ``@attestate/crawler`` repository always contains a pre-defined
+``config.mjs`` file that you can copy.
+
+Structurally, it is defined as follows:
 
 .. code-block:: javascript
 
-  export default [
+  export default {
+    // First, there is the crawl path property, which we'll describe later in
+    // this section.
+    path: { 
+      "...": "..."
+    },
+    queue: {
+      options: {
+        // The queue's concurrency controls how many requests are sent to
+        // external resources concurrently.
+        concurrent: 100
+      },
+    },
+    // In case an external resource implements rate limiting, then the crawler
+    // can be rate limited here to not pass any of these limits.
+    endpoints: {
+      ["https://ipfs.io]: {
+        timeout: 10_000,
+        requestsPerUnit: 25,
+        unit: "second",
+      },
+    }
+  };
+
+
+Structurally, the path property looks as follows
+
+.. code-block:: javascript
+
+  const path = [
     {
       name: "Task #1",
       extractor: { /* ... */ },
@@ -66,7 +117,7 @@ pre-configured ``DATA_DIR`` environment variable.
 
 .. code-block:: javascript
 
-  export default [
+  const path = [
     {
       name: "call-block-logs",
       extractor: {
@@ -106,7 +157,7 @@ extracted in the extraction phase prioly.
 
   const topic0 =
   "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
-  export default [
+  const path = [
     {
       name: "call-block-logs",
       "...": "...",
@@ -135,7 +186,7 @@ below, ``loader.handler`` stores each line from ``input.path`` in a database.
 
 .. code-block:: javascript
 
-  export default [
+  const path = [
     {
       name: "call-block-logs",
       loader: {
@@ -149,59 +200,5 @@ below, ``loader.handler`` stores each line from ``input.path`` in a database.
     },
   ];
 
-The full crawl path can be found below and makes use of the
-``@attestate/crawler-call-block-logs`` strategy.
-
-.. code-block:: javascript
-
-  import { resolve } from "path";
-  import { env } from "process";
-
-  /*
-   * NOTE: @attestate/crawler-call-block-logs contains an index.mjs file that
-   * exports an `extractor` and `transformer` value. These fit the expected
-   * crawl path `module` property.
-   */
-  import * as blockLogs from "@attestate/crawler-call-block-logs";
-  
-  /*
-   * NOTE: After the extraction phase, we're filtering all events by topics.
-   * We're generating the transfer event's signature using the keccak256 hash
-   * function.
-   *
-   *  keccak256("Transfer(address,address,uint256)") == "0xddf...";
-   */
-  const topic0 =
-  "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
-
-  export default [
-    {
-      // NOTE: For now, each task in the crawl path must have a unique name
-      name: "call-block-logs",
-      extractor: {
-        module: blockLogs.extractor,
-        args: [0, 1],
-        output: {
-          path: resolve(env.DATA_DIR, "call-block-logs-extraction"),
-        },
-      },
-      transformer: {
-        module: blockLogs.transformer,
-        args: [topic0],
-        input: {
-          path: resolve(env.DATA_DIR, "call-block-logs-extraction"),
-        },
-        output: {
-          path: resolve(env.DATA_DIR, "call-block-logs-transformation"),
-        },
-      },
-      loader: {
-        handler: line => {
-          // db.store(line) 
-        },
-        input: {
-          path: resolve(env.DATA_DIR, "call-block-logs-transformer"),
-        }
-      }
-    },
-  ];
+The full configuration can be found on `GitHub
+<https://github.com/attestate/crawler/blob/main/config.mjs>`_.

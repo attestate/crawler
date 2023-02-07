@@ -52,7 +52,6 @@ The following environment variables are required:
 
   RPC_HTTP_HOST=https://
   DATA_DIR=data
-  EXTRACTION_WORKER_CONCURRENCY=12
   IPFS_HTTPS_GATEWAY=https://
   ARWEAVE_HTTPS_GATEWAY=https://
 
@@ -74,7 +73,6 @@ directory.
   Options:
     --help     Show help                                                 [boolean]
     --version  Show version number                                       [boolean]
-    --path     Sequence of strategies that the crawler will follow.     [required]
     --config   Configuration for CLI
 
 Configuring Your First Crawl

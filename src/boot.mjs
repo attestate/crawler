@@ -6,7 +6,7 @@ import { env } from "process";
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
 
-import { config as configSchema } from "./schema.mjs";
+import configSchema from "./schemata/configuration.mjs";
 import { __dirname } from "./node_filler.mjs";
 import logger from "./logger.mjs";
 import { init } from "./lifecycle.mjs";
@@ -17,7 +17,10 @@ const workerPath = resolve(__dirname, "./worker_start.mjs");
 const log = logger("boot");
 
 export async function getConfig(configFile) {
-  const config = (await import(resolve(configFile))).default;
+  return (await import(resolve(configFile))).default;
+}
+
+export function validateConfig(config) {
   const ajv = new Ajv();
   addFormats(ajv);
   const check = ajv.compile(configSchema);
@@ -40,7 +43,14 @@ export async function createWorker(config) {
   return worker;
 }
 
-export async function boot(crawlPath, config) {
-  const worker = await createWorker(config);
-  return await init(worker, crawlPath);
+export async function boot(config) {
+  validateConfig(config);
+  // NOTE: We still use @neume-network/extraction-worker that implements a
+  // older version of the crawler configuration. But since in
+  // @attestate/crawler, we've merged the path and the config, we'll have to
+  // pass a copy to it that doesn't include it.
+  const configCopy = { ...config };
+  delete configCopy.path;
+  const worker = await createWorker(configCopy);
+  return await init(worker, config.path);
 }

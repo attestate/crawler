@@ -4,7 +4,7 @@ import { env } from "process";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 
-import { boot, createWorker, getConfig } from "../src/boot.mjs";
+import { boot, createWorker, getConfig, validateConfig } from "../src/boot.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -49,13 +49,14 @@ test.serial("if boot can be started programmatically", async (t) => {
     },
   ];
   const config = {
+    path: crawlPath,
     queue: {
       options: {
         concurrent: 1,
       },
     },
   };
-  await boot(crawlPath, config);
+  await boot(config);
   t.true(hitInit);
   t.true(hitUpdate);
 });
@@ -63,13 +64,14 @@ test.serial("if boot can be started programmatically", async (t) => {
 test.serial("if boot can throw errors", async (t) => {
   const crawlPath = [{ name: "doesn't exist", extractor: {} }];
   const config = {
+    path: crawlPath,
     queue: {
       options: {
         concurrent: 1,
       },
     },
   };
-  await t.throwsAsync(async () => await boot(crawlPath, config));
+  await t.throwsAsync(async () => await boot(config));
 });
 
 test.serial("should be able to create worker", (t) => {
@@ -90,13 +92,15 @@ test.serial("should be able to create worker", (t) => {
 });
 
 test("should be able getConfig for a valid path", async (t) => {
-  await t.notThrowsAsync(() => getConfig(resolve(__dirname, "../config.mjs")));
+  const config = await getConfig(resolve(__dirname, "../config.mjs"));
+  t.notThrows(() => validateConfig(config));
 });
 
 test("if getConfig fails on invalid config", async (t) => {
-  await t.throwsAsync(() =>
-    getConfig(resolve(__dirname, "../test/fixtures/falseconfig.mjs"))
+  const config = await getConfig(
+    resolve(__dirname, "../test/fixtures/falseconfig.mjs")
   );
+  t.throws(() => validateConfig(config));
 });
 
 test("getConfig should throw error for invalid path", async (t) => {

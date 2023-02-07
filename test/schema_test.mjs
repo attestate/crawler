@@ -5,29 +5,26 @@ import test from "ava";
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
 
-import {
-  version,
-  config,
-  crawlPath,
-  ipfs,
-  arweave,
-  graphql,
-  jsonrpc,
-  https,
-} from "../src/schema.mjs";
+import configuration from "../src/schemata/configuration.mjs";
+const crawlPath = configuration.properties.path;
+
+import ipfs from "../src/schemata/messages/ipfs.mjs";
+import arweave from "../src/schemata/messages/arweave.mjs";
+import graphql from "../src/schemata/messages/graphql.mjs";
+import jsonrpc from "../src/schemata/messages/jsonrpc.mjs";
+import https from "../src/schemata/messages/https.mjs";
 
 const ajv = new Ajv();
 addFormats(ajv);
 
 test("compile schema", (t) => {
-  ajv.compile(version);
-  ajv.compile(config);
+  ajv.compile(configuration);
   ajv.compile(crawlPath);
   t.pass();
 });
 
 test("should be a valid config", (t) => {
-  const check = ajv.compile(config);
+  const check = ajv.compile(configuration);
   const example = {
     queue: {
       options: {
@@ -48,7 +45,7 @@ test("should be a valid config", (t) => {
 });
 
 test("should be an invalid config", (t) => {
-  const check = ajv.compile(config);
+  const check = ajv.compile(configuration);
   const example = {
     queue: {
       options: {

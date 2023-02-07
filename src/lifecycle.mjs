@@ -9,7 +9,7 @@ import Ajv from "ajv";
 import addFormats from "ajv-formats";
 import util from "util";
 
-import { crawlPath as crawlPathSchema, workerMessage } from "./schema.mjs";
+import workerMessage from "./schemata/messages/worker.mjs";
 import { NotFoundError } from "./errors.mjs";
 import { fileExists } from "./disc.mjs";
 import logger from "./logger.mjs";
@@ -47,17 +47,6 @@ export function prepareMessages(messages, commissioner) {
       };
     })
     .filter(validateWorkerMessage);
-}
-
-export function validateCrawlPath(crawlPath) {
-  const crawlPathValidator = ajv.compile(crawlPathSchema);
-  const valid = crawlPathValidator(crawlPath);
-
-  if (!valid) {
-    log("Found 1 or more validation error in crawl path:", crawlPath);
-    log(crawlPathValidator.errors);
-    throw new Error("Validation error in crawl path");
-  }
 }
 
 export async function transform(name, strategy) {
@@ -223,7 +212,6 @@ export async function load(loadHandler, filePath) {
 }
 
 export async function init(worker, crawlPath) {
-  validateCrawlPath(crawlPath);
   const messageRouter = new EventEmitter();
 
   worker.on("message", (message) => {
