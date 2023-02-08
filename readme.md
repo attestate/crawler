@@ -9,9 +9,12 @@ derivatives.
 - **Modular:** Extract, Transform and Load stage separation makes composing
   simple components into complex workflows possible. Stages are reunnable to
   recover errors.
-- **Embedded:** Unlike Graph Protocol, attestate's crawler does not have a
-  separate server process. It can directly write to self-contained databases
-  like LevelDB or sqlite.
+
+* **Embedded:** Unlike Graph Protocol, Attestate's Crawler does not have a
+  separate server process. It writes directly to
+  [LMDB](http://www.lmdb.tech/doc/), an embedded database that can be read-from
+  thread-safely at any time.
+
 - **Batteries-included:** Support for Ethereum, IPFS, Arweave, GraphQL and
   rate-limit pooling for Infura and Alchemy.
 
