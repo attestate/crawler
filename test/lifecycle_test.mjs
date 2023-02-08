@@ -47,75 +47,43 @@ test("if function transform gracefully returns when sourceFile doesn't exist", a
   t.falsy(result);
 });
 
-test.skip("reading a file by line using the line reader", async (t) => {
-  const sourcePath = resolve(__dirname, "./fixtures/file0.data");
-  const outputPath = resolve(__dirname, "./fixtures/file0.output");
+test("reading a file by line using the line reader", async (t) => {
   let count = 0;
-  t.plan(3);
-  const lineHandlerMock = (line) => {
+  t.plan(5);
+  const lineHandlerMock = (line, argument1) => {
+    t.is(argument1, "argument1");
     if (count === 0) t.is(line, "line0");
     if (count === 1) t.is(line, "line1");
     count++;
     return { write: "hello world", messages: [] };
   };
-  const strategies = (
-    await loadStrategies("./strategies", "transformer.mjs")
-  ).filter(
-    (strategy) =>
-      strategy && strategy.module && strategy.module.name === "call-tokenuri"
-  );
-  const strategy = { ...strategies[0].module, onLine: lineHandlerMock };
-  await transform({ module: strategy }, sourcePath, outputPath, []);
-  t.is(count, 2);
-  await unlink(outputPath);
-});
-
-test.skip("applying transformation strategies to a file", async (t) => {
-  const sourcePath = resolve(__dirname, "./fixtures/file1.data");
-  const outputPath = resolve(__dirname, "./fixtures/file1.output");
-  const strategies = (
-    await loadStrategies("./strategies", "transformer.mjs")
-  ).filter(
-    (strategy) =>
-      strategy && strategy.module && strategy.module.name === "call-tokenuri"
-  );
-  await transform(strategies[0], sourcePath, outputPath, []);
-  try {
-    await access(outputPath, constants.R_OK);
-  } catch (err) {
-    t.log(err);
-    t.fail();
-    return;
-  }
-  await unlink(outputPath);
-  t.pass();
-});
-
-test.skip("strategy transformer should receive inputs", async (t) => {
-  const sourcePath = resolve(__dirname, "./fixtures/file1.data");
-  const outputPath = resolve(__dirname, "./fixtures/file2.output");
-  t.plan(3);
-  const lineHandlerMock = (line, arg1) => {
-    t.is(arg1, "arg1");
-    return { write: "hello world", messages: [] };
+  const strategy = {
+    name: "test-strategy",
+    transformer: {
+      module: {
+        onLine: lineHandlerMock,
+        onClose: () => {},
+      },
+      args: ["argument1"],
+      input: {
+        path: resolve(__dirname, "./fixtures/file0.data"),
+      },
+      output: {
+        path: resolve(__dirname, "./fixtures/file0.output"),
+      },
+    },
   };
-  const strategies = (
-    await loadStrategies("./strategies", "transformer.mjs")
-  ).filter(
-    (strategy) =>
-      strategy && strategy.module && strategy.module.name === "call-tokenuri"
-  );
-  const strategy = { ...strategies[0].module, onLine: lineHandlerMock };
-  await transform({ module: strategy }, sourcePath, outputPath, ["arg1"]);
+
+  await transform(strategy.name, strategy.transformer);
+  t.is(count, 2);
   try {
-    await access(outputPath, constants.R_OK);
+    await access(strategy.transformer.output.path, constants.R_OK);
   } catch (err) {
     t.log(err);
     t.fail();
-    return;
+  } finally {
+    await unlink(strategy.transformer.output.path);
   }
-  await unlink(outputPath);
-  t.pass();
 });
 
 test("if extract rejects result if it is invalid", async (t) => {
