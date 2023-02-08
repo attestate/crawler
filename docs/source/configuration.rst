@@ -2,7 +2,7 @@ Configuration
 =============
 
 Compared to other tools that may help you replicate Ethereum state locally,
-Attestate's crawler comes with plenty of configuration options. This page's
+Attestate's Crawler comes with plenty of configuration options. This page's
 purpose is to serve as a reference for all configurable options.
 
 Overview
@@ -79,7 +79,7 @@ Structurally, it is defined as follows:
     // In case an external resource implements rate limiting, then the crawler
     // can be rate limited here to not pass any of these limits.
     endpoints: {
-      ["https://ipfs.io]: {
+      ["https://ipfs.io"]: {
         timeout: 10_000,
         requestsPerUnit: 25,
         unit: "second",
@@ -181,8 +181,15 @@ extracted in the extraction phase prioly.
   ];
 
 Upon completion of the transformation step, the loading phase is initiated. In
-it the transformation's output is loaded into an output container. In the case
-below, ``loader.handler`` stores each line from ``input.path`` in a database.
+it the transformation's output is loaded into `LMDB
+<http://www.lmdb.tech/doc/>`_. For that, a strategy must implement a
+``loader.module.direct`` and ``loader.module.order`` `generator function
+<https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function*>`_.
+These functions must allocate a key-value relationship between each of the data
+points:
+
+* ``direct()``'s yielded ``key`` must be globally unique (like a primary key).
+* ``order()``'s yielded ``key`` must be unique and totally, lexographically orderable.
 
 .. code-block:: javascript
 
@@ -190,15 +197,39 @@ below, ``loader.handler`` stores each line from ``input.path`` in a database.
     {
       name: "call-block-logs",
       loader: {
-        handler: line => {
-          // db.store(line) 
+        module: {
+          direct: function* (line) {
+            const log = JSON.parse(line);
+            // NOTE: To access a transaction directly by its identifier, in
+            // `direct` we select ``transactionHash`` as the key for the entire
+            // `log`.
+            yield {
+              key: log.transactionHash,
+              value: log
+            }
+          },
+          order: function* (line) {
+            const log = JSON.parse(line);
+            // NOTE: Since we want to get an ordered list of events, we
+            // construct a total order of transactions of their block number
+            // and their "height" within a block (`transactionIndex`).
+            // LMDB will then allow us to do a range call on these keys to
+            // instantly retrieve them orderly.
+            yield {
+              key: [log.blockNumber, log.transactionIndex],
+              value: log.transactionHash
+            }
+          },
         },
         input: {
           path: resolve(env.DATA_DIR, "call-block-logs-transformer"),
+        },
+        output: {
+          path: resolve(env.DATA_DIR, "call-block-logs-loader"),
         }
       }
     },
   ];
 
-The full configuration can be found on `GitHub
-<https://github.com/attestate/crawler/blob/main/config.mjs>`_.
+And that's all! A full configuration of the Attestate crawler can be found on
+`GitHub <https://github.com/attestate/crawler/blob/main/config.mjs>`_.

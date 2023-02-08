@@ -8,6 +8,7 @@ import { env } from "process";
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
 import util from "util";
+import { open } from "lmdb";
 
 import workerMessage from "./schemata/messages/worker.mjs";
 import { NotFoundError } from "./errors.mjs";
@@ -199,15 +200,32 @@ export function extract(name, strategy, worker, messageRouter) {
   });
 }
 
-export async function load(loadHandler, filePath) {
+export async function load(name, strategy, db) {
   const rl = createInterface({
-    input: createReadStream(filePath),
+    input: createReadStream(strategy.input.path),
     crlfDelay: Infinity,
   });
 
+  const join = (value, separator) => {
+    if (Array.isArray(value)) return value.join(separator);
+    return value;
+  };
+  const separator = ":";
+  const prefix = name;
   for await (const line of rl) {
     if (line === "") continue;
-    loadHandler(line);
+    for (const { key, value } of strategy.module.order(line)) {
+      await db.put(
+        `${prefix}${separator}order${separator}${join(key, separator)}`,
+        value
+      );
+    }
+    for (const { key, value } of strategy.module.direct(line)) {
+      await db.put(
+        `${prefix}${separator}direct${separator}${join(key, separator)}`,
+        value
+      );
+    }
   }
 }
 
@@ -252,8 +270,13 @@ export async function init(worker, crawlPath) {
       log(`Ending transformer strategy "${strategy.name}"`);
     }
 
-    if (strategy.loader && typeof strategy.loader.handler === "function") {
-      await load(strategy.loader.handler, strategy.loader.input.path);
+    if (strategy.loader) {
+      log(`Starting loader strategy "${strategy.name}"`);
+      const db = new open({
+        path: strategy.loader.output.path,
+      });
+      await load(strategy.name, strategy.loader, db);
+      log(`Ending loader strategy "${strategy.name}"`);
     }
   }
 

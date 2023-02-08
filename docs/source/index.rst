@@ -7,13 +7,14 @@ derivatives.
 * **Modular:** :ref:`Extract, Transform and Load <extract-transform-load>`
   stage separation makes composing simple components into complex workflows
   possible. Stages are reunnable to recover errors.
-* **Embedded:** Unlike Graph Protocol, attestate's crawler does not have a
-  separate server process. It can directly write to self-contained databases
-  like LevelDB or sqlite.
+* **Embedded:** Unlike Graph Protocol, Attestate's Crawler does not have a
+  separate server process. It writes directly to `LMDB
+  <http://www.lmdb.tech/doc/>`_, an embedded database that can be read-from
+  thread-safely at any time.
 * **Batteries-included:** Support for Ethereum, IPFS, Arweave, GraphQL and
   rate-limit pooling for Infura and Alchemy.
 
-Attestate's crawler is created to build a web3 of peer to peer applications.
+Attestate's Crawler is created to build a web3 of peer to peer applications.
 
 Comparison
 ----------
@@ -31,7 +32,7 @@ Compare Attestate's crawler with the Graph Protocol using the table below.
      - ✓ (Run as your app)
      - ✘ (Runs as a network)
    * - **Output Formats**
-     - CSV, JSON, any database
+     - CSV, JSON, LMDB
      - GraphQL
    * - **Web2 support**
      - HTTP, JSON-RPC, GraphQL
@@ -64,7 +65,7 @@ Features
 --------
 * Rerunnable crawls using :ref:`Extract, Transform and Load <extract-transform-load>` stage separation
 * Fast: GB/s extraction from Ethereum (co-located Erigon)
-* Database-agnostic: LevelDB, sqlite, PostgreSQL, etc.
+* Thread-safe reads with LMDB
 * Rate-limiting support for Infura & Alchemy
 * Efficient: Minimized network calls through separation of concerns
 * No token launch, no miners, no fees: Just a community FOSS GPL3 project

@@ -75,7 +75,9 @@ const path = {
       loader: {
         type: "object",
         properties: {
-          // PROBLEM: We cannot define "handler" as a type: function here.
+          module: {
+            type: "object",
+          },
           input: {
             type: "object",
             properties: {
@@ -85,8 +87,17 @@ const path = {
             },
             required: ["path"],
           },
+          output: {
+            type: "object",
+            properties: {
+              path: {
+                type: "string",
+              },
+            },
+            required: ["path"],
+          },
         },
-        required: ["input"],
+        required: ["input", "output", "module"],
         additionalProperties: true,
       },
     },

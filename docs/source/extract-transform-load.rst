@@ -13,35 +13,37 @@ developed to implement separation on concerns for data extraction (e.g.,
 network requests), transformation (cleaning, sanitizing) and loading the data
 into an output container.
 
-Attestate Crawler business logic for strategies is separated into these three
-stages to ensure the efficiency of a crawl. The benefits of this approach can
-be demonstrated with a naively implemented crawler that lacks this separation.
-
-Consider the following pseudo code for downloading Ethereum blocks:
+The crawler business logic is separated into three stages to ensure the
+efficiency of a crawl. The benefits of this approach can be demonstrated by
+naively implementing a crawler that lacks this separation. Consider the
+following pseudo code for downloading Ethereum blocks:
 
 .. code-block:: javascript
 
-  // We first download all block headers from.
-  const result = await fetch("https://ethereum-example-api.com/blocks")
+  function crawl() {
+    // We first download all block headers from.
+    const result = await fetch("https://ethereum-example-api.com/blocks")
 
-  // In a second step, we collect all transactions from the first block
-  const txs = filterTxs(result.blocks[0])
+    // In a second step, we collect all transactions from the first block
+    const txs = filterTxs(result.blocks[0])
 
-  // Finally, we store each transaction in a database
-  txs.forEach(tx => db.store(tx))
+    // Finally, we store each transaction in a database
+    txs.forEach(tx => db.store(tx))
+  }
 
-Now, let's consider an un-happy path for this script, e.g., that ``function
-filterTxs`` errors. In this case, the developer has to fix the function's
-implementation and re-run the script. While for small extraction tasks, this
-isn't a problem, when we extract big amounts of data from a source, having to
-repeat all network related tasks is wasteful. A data source could implement
-rate-limiting, block the script entirely or respond slowly.
+In this case, if ``function crawl()`` fails, the developer has to fix the error
+and re-run the entire script, including downloading all block headers.
 
-An additional problem with mixing extraction, transformation and loading logic
-is that it makes debugging slow. Instead of re-running the ``filterTxs``
-function on a crawl result, the developer has to now wait for the network task
-to finish. This increases their feedback loop's duration and makes software
-development miserable.
+While for small extraction tasks, this isn't a problem, when we extract big
+amounts of data, having to repeat all network requests is wasteful. A data
+source could implement rate-limiting too, block the script entirely or respond
+slowly, which would worsen our turn-around time.
+
+So a problem with mixing extraction, transformation and loading logic is that
+it slows down debugging. Instead of re-running the ``filterTxs`` function on a
+crawl result, the developer has to wait for the network task to finish, to then
+re-run ``filterTxs`` for debugging. This increases their feedback loop's
+duration and slows down their software development cycle.
 
 ETL in Attestate Crawler
 ------------------------
@@ -54,32 +56,43 @@ Extraction
 __________
 
 During the extraction phase, the crawler queries the network, e.g. the JSON-RPC
-endpoint of an Ethereum node, and writes incoming results directly to a flat
-file on disk. 
+endpoint of an Ethereum node, and writes the incoming results to a flat file.
 
 A convention in designing an extractor module is to avoid transforming any
-results, as this risks crashing the process. The stage's goal is complete and
+results as this risks crashing the process. The stage's goal is complete and
 persist as many network requests as possible.
 
 Transformation
 ______________
 
 After downloading the data source and writing the results to disk, during the
-transformation phase, the data is formatted, cleaned and sanitized. The benefit
-or separating extraction and transformation is that running the transformation
-afterwards is cheap (it happens on disk). In case a data source's structure has
-changed, only having to adjust the transformation step accelerates the
-developer's feedback loop without needing to make more network requests.
+transformation phase, the data is formatted, cleaned and sanitized. 
 
-If crashes must occur because of upstream changes to the data source, it's best
-they happen in the transformation phase.
+The benefit or separating extraction and transformation is that running the
+transformation after extraction is cheap as it happens on disk. In case a data
+source's structure has changed, only having to adjust the transformation step
+accelerates the developer's feedback loop without needing to make more network
+requests.
+
+If crashes must occur because of upstream changes to a data source (e.g., when
+an API changes), we recommend having them happen during the transformation
+phase, conceptually like a "predetermined breaking point."
 
 Loading
 _______
 
-Finally, once all data has been transformed and persisted to disk again, it is
-read from the transformation output file and loaded into an output container
-(e.g., a database).
+Once all data has been transformed and persisted to disk, it is then read from
+the transformation output file and loaded into an instance of `LMDB
+<http://www.lmdb.tech/doc/>`_.
+
+Within the strategy, a user can define a range-accessible and
+lexographically-ordered identifier, as well as one for direct access to a
+value. Both identifiers will be stored by the crawler in the LMDB storage and
+it is thread-safely accessible by any other process.
+
+This means that the crawler process can run and write continuously to the
+database while another part of the application is constantly able to safely
+read the data too.
 
 Implementing an ETL Strategy
 ----------------------------
