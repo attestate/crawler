@@ -1,15 +1,22 @@
-# changelog
+# Changelog
+
+## 0.3.0
+
+- (breaking) Change ` loader.handler`` to two generator functions  `order`and`direct`as a property called`module` (consistent with extractor and
+  transformer)
+- (breaking) `configuration.output.path` object is now required
+- (breaking) `configuration.loader.module` object is now required
+- Integrate with LMDB to persist loader data
 
 ## 0.2.0
 
-- Merge crawl path and configuration file into configuration file
-- Move `EXTRACTION_WORKER_CONCURRENCY` into configuration file
+- (breaking) Merge crawl path and configuration file into configuration file
+- (breaking) Move `EXTRACTION_WORKER_CONCURRENCY` into configuration file
 
 ## 0.1.0
 
-- Release on npm and allow importing via JavaScript
+[skipped by accident]
 
 ## 0.0.1
 
-- Can download catalog and soundxyz in an acceptable time frame using optimized
-  endpoints
+- Initial release

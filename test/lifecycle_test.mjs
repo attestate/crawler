@@ -1,6 +1,6 @@
 //@format
 import { constants } from "fs";
-import { access, unlink } from "fs/promises";
+import { access, unlink, rmdir } from "fs/promises";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import EventEmitter from "events";
@@ -10,6 +10,7 @@ import { fileExists } from "../src/disc.mjs";
 import {
   extract,
   transform,
+  load,
   EXTRACTOR_CODES,
   prepareMessages,
 } from "../src/lifecycle.mjs";
@@ -30,6 +31,80 @@ const mockMessage = {
     method: "GET",
   },
 };
+
+test("direct load function", async (t) => {
+  let count = 0;
+  t.plan(4);
+  const dbMock = {
+    put: async (k, v) => {
+      t.truthy(v);
+      if (count === 0) t.is(k, "test-strategy:direct:a");
+      if (count === 1) t.is(k, "test-strategy:direct:b");
+      count++;
+    },
+  };
+  const strategy = {
+    name: "test-strategy",
+    loader: {
+      input: {
+        path: resolve(__dirname, "./fixtures/file1.data"),
+      },
+      output: {
+        path: resolve(__dirname, "./fixtures/file1.output"),
+      },
+      module: {
+        order: function* () {},
+        direct: function* (line) {
+          const list = JSON.parse(line);
+          for (let elem of list) {
+            yield {
+              key: [elem.primary],
+              value: elem,
+            };
+          }
+        },
+      },
+    },
+  };
+  await load(strategy.name, strategy.loader, dbMock);
+});
+
+test("order load function", async (t) => {
+  let count = 0;
+  t.plan(4);
+  const dbMock = {
+    put: async (k, v) => {
+      t.truthy(v);
+      if (count === 0) t.is(k, "test-strategy:order:a:c");
+      if (count === 1) t.is(k, "test-strategy:order:b:a");
+      count++;
+    },
+  };
+  const strategy = {
+    name: "test-strategy",
+    loader: {
+      input: {
+        path: resolve(__dirname, "./fixtures/file1.data"),
+      },
+      output: {
+        path: resolve(__dirname, "./fixtures/file1.output"),
+      },
+      module: {
+        direct: function* () {},
+        order: function* (line) {
+          const list = JSON.parse(line);
+          for (let elem of list) {
+            yield {
+              key: [elem.primary, elem.secondary],
+              value: elem.primary,
+            };
+          }
+        },
+      },
+    },
+  };
+  await load(strategy.name, strategy.loader, dbMock);
+});
 
 test("if function transform gracefully returns when sourceFile doesn't exist", async (t) => {
   const strategy = {

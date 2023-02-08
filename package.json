@@ -36,10 +36,11 @@
     "debug": "4.3.4",
     "dotenv": "16.0.0",
     "eth-fun": "0.9.1",
+    "lmdb": "2.7.9",
     "yargs": "^17.5.1"
   },
   "devDependencies": {
-    "@attestate/crawler-call-block-logs": "0.2.1",
+    "@attestate/crawler-call-block-logs": "0.2.2",
     "ava": "4.1.0",
     "esmock": "1.7.5",
     "husky": "7.0.4",

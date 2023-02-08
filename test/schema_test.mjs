@@ -93,9 +93,15 @@ test("should be a valid crawlPath", (t) => {
         },
       },
       loader: {
-        handler: () => {},
+        module: {
+          order: function* () {},
+          direct: function* () {},
+        },
         input: {
           path: "input",
+        },
+        output: {
+          path: "output",
         },
       },
     },
