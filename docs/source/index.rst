@@ -101,3 +101,8 @@ Table of Contents
 
   getting-started
   configuration
+
+.. toctree::
+  :caption: Specifications
+
+  strategy-specification
