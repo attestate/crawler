@@ -10,6 +10,7 @@ import addFormats from "ajv-formats";
 import util from "util";
 import { open } from "lmdb";
 
+import { SEPARATOR, MARKER_ORDER, MARKER_DIRECT } from "./database.mjs";
 import workerMessage from "./schemata/messages/worker.mjs";
 import { NotFoundError } from "./errors.mjs";
 import { fileExists } from "./disc.mjs";
@@ -206,25 +207,21 @@ export async function load(name, strategy, db) {
     crlfDelay: Infinity,
   });
 
-  const join = (value, separator) => {
-    if (Array.isArray(value)) return value.join(separator);
-    return value;
+  const pack = (value) => {
+    if (Array.isArray(value)) return value;
+    return [value];
   };
-  const separator = ":";
-  const prefix = name;
   for await (const line of rl) {
     if (line === "") continue;
+
+    const orderDB = db.openDB(`${name}${SEPARATOR}${MARKER_ORDER}`);
     for (const { key, value } of strategy.module.order(line)) {
-      await db.put(
-        `${prefix}${separator}order${separator}${join(key, separator)}`,
-        value
-      );
+      await orderDB.put(pack(key), value);
     }
+
+    const directDB = db.openDB(`${name}${SEPARATOR}${MARKER_DIRECT}`);
     for (const { key, value } of strategy.module.direct(line)) {
-      await db.put(
-        `${prefix}${separator}direct${separator}${join(key, separator)}`,
-        value
-      );
+      await directDB.put(pack(key), value);
     }
   }
 }

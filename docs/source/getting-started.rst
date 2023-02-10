@@ -68,12 +68,15 @@ directory.
 
 .. code-block:: bash
 
-  Usage: crawler.mjs <options>
-
+  crawler.mjs [command]
+  
+  Commands:
+    crawler.mjs run [path]                  Run a crawl given a path
+    crawler.mjs range [path] [table] [key]  Query an LMDB key range in a table
+  
   Options:
     --help     Show help                                                 [boolean]
     --version  Show version number                                       [boolean]
-    --config   Configuration for CLI
 
 Configuring Your First Crawl
 ----------------------------

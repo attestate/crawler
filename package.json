@@ -8,7 +8,7 @@
   },
   "scripts": {
     "test": "ava --verbose --timeout=20s",
-    "dev": "DEBUG=* ./crawler.mjs --path crawl_path.mjs --config config.mjs",
+    "dev": "DEBUG=* ./crawler.mjs run config.mjs",
     "dev:silent": "node ./src/boot.mjs",
     "prepare": "husky install"
   },

@@ -34,13 +34,18 @@ const mockMessage = {
 
 test("direct load function", async (t) => {
   let count = 0;
-  t.plan(4);
+  t.plan(8);
   const dbMock = {
-    put: async (k, v) => {
-      t.truthy(v);
-      if (count === 0) t.is(k, "test-strategy:direct:a");
-      if (count === 1) t.is(k, "test-strategy:direct:b");
-      count++;
+    openDB: (name) => {
+      t.true(name === "test-strategy:direct" || name === "test-strategy:order");
+      return {
+        put: async (k, v) => {
+          t.truthy(v);
+          if (count === 0) t.deepEqual(k, ["a"]);
+          if (count === 1) t.deepEqual(k, ["b"]);
+          count++;
+        },
+      };
     },
   };
   const strategy = {
@@ -71,13 +76,18 @@ test("direct load function", async (t) => {
 
 test("order load function", async (t) => {
   let count = 0;
-  t.plan(4);
+  t.plan(8);
   const dbMock = {
-    put: async (k, v) => {
-      t.truthy(v);
-      if (count === 0) t.is(k, "test-strategy:order:a:c");
-      if (count === 1) t.is(k, "test-strategy:order:b:a");
-      count++;
+    openDB: (name) => {
+      t.true(name === "test-strategy:direct" || name === "test-strategy:order");
+      return {
+        put: async (k, v) => {
+          t.truthy(v);
+          if (count === 0) t.deepEqual(k, ["a", "c"]);
+          if (count === 1) t.deepEqual(k, ["b", "a"]);
+          count++;
+        },
+      };
     },
   };
   const strategy = {

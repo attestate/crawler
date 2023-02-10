@@ -13,6 +13,8 @@ import { init } from "./lifecycle.mjs";
 import * as environment from "./environment.mjs";
 import * as disc from "./disc.mjs";
 
+export * as database from "./database.mjs";
+
 const workerPath = resolve(__dirname, "./worker_start.mjs");
 const log = logger("boot");
 
