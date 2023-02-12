@@ -48,7 +48,7 @@ const argv = yargs(hideBin(process.argv))
         });
     },
     async (argv) => {
-      const db = new open(argv.path);
+      const db = new open(resolve(argv.path));
       const subdb = db.openDB(argv.table);
       const key = argv.key ? argv.key.split(SEPARATOR) : "";
       const results = await all(subdb, key);
