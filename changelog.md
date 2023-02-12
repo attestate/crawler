@@ -1,8 +1,15 @@
 # Changelog
 
+## 0.4.0
+
+- (breaking) Create two separate LMDB tables for "order" and "load" data
+- Add `crawler.mjs range` command
+- Add Strategy Specification sphinx page
+
 ## 0.3.0
 
-- (breaking) Change ` loader.handler`` to two generator functions  `order`and`direct`as a property called`module` (consistent with extractor and
+- (breaking) Change `loader.handler` to two generator functions `order` and
+  `direct` as a property called `module` (consistent with extractor and
   transformer)
 - (breaking) `configuration.output.path` object is now required
 - (breaking) `configuration.loader.module` object is now required
