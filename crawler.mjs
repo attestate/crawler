@@ -52,7 +52,7 @@ const argv = yargs(hideBin(process.argv))
       const subdb = db.openDB(argv.table);
       const key = argv.key ? argv.key.split(SEPARATOR) : "";
       const results = await all(subdb, key);
-      results.forEach(console.log);
+      results.forEach((elem) => console.log(elem));
     }
   )
   .parse();
