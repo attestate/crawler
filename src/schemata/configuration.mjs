@@ -105,10 +105,48 @@ const path = {
   },
 };
 
+const environment = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "rpcHttpHost",
+    "dataDir",
+    "ipfsHttpsGateway",
+    "arweaveHttpsGateway",
+  ],
+  properties: {
+    rpcHttpHost: {
+      type: "string",
+      format: "uri",
+      pattern: "^https?://",
+    },
+    rpcApiKey: {
+      type: "string",
+    },
+    dataDir: {
+      type: "string",
+    },
+    ipfsHttpsGateway: {
+      type: "string",
+      format: "uri",
+      pattern: "^https?://",
+    },
+    ipfsHttpsGatewayKey: {
+      type: "string",
+    },
+    arweaveHttpsGateway: {
+      type: "string",
+      format: "uri",
+      pattern: "^https?://",
+    },
+  },
+};
+
 const config = {
   type: "object",
   required: ["queue"],
   properties: {
+    environment,
     path: { ...path },
     queue: {
       type: "object",

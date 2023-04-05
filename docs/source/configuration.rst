@@ -29,15 +29,21 @@ variables from a ``.env`` file in the project root into Node.js's
 already been set in, e.g., the ``.env`` file can be overwritten by passing them
 before an invoking command.
 
-The following environment variables are **required** for ``@attestate/crawler``
-to run:
+``@attestate/crawler`` guarantees any downstream plugin or strategy the
+presence and validity of environment variables. To avoid having to define
+``.env`` files in applications that programmatically embed the crawler,
+environment variables can be set in the config file and they'll be made
+available through ``process.env``.
 
-* ``RPC_HTTP_HOST`` describes the host that Ethereum JSON-RPC extraction request are made against. It must be set to an URL to an Ethereum full node's JSON-RPC endpoint that starts with ``https://``. ``ws://`` or ``wss://`` prefixes are currently not supported. We support URLs that include the API's bearer token as is the case with, e.g., Infura or Alchemy.
-*  ``RPC_API_KEY`` is the API key for the host extraction requests are made against. It must be set if an Ethereum full node was provisioned behind an HTTP proxy that requires a bearer token authorization via the HTTP ``Authorization`` header. In this case, the header is structurally set as follows: ``Authorization: Bearer ${RPC_API_KEY}``.
-* ``DATA_DIR`` is the directory that stores all results from extraction and transformation of the crawler. It must be set to a file system path (relative or absolute).
-* ``IPFS_HTTPS_GATEWAY`` describes the host that IPFS extraction requests are made against. A list of publicly accessible IPFS gateways can be found `here <https://ipfs.github.io/public-gateway-checker/>`_.
-*  ``IPFS_HTTPS_GATEWAY_KEY`` is the API key for the IPFS host extraction requests are made against. It must be set if an IPFS node was provisioned behind an HTTP proxy that requires a bearer token authorization via the HTTP ``Authorization`` header. In this case, the header is structurally set as follows: ``Authorization: Bearer ${IPFS_HTTPS_GATEWAY_KEY}``.
-* ``ARWEAVE_HTTPS_GATEWAY`` describes the host that Arweave extraction requests are made against. A commonly-used Arweave gateway is ``https://arweave.net``.
+The environment variables with an asterisk \* are **required** for
+``@attestate/crawler`` to run:
+
+* ``RPC_HTTP_HOST``\* describes the host that Ethereum JSON-RPC extraction request are made against. It must be set to an URL to an Ethereum full node's JSON-RPC endpoint that starts with ``https://``. ``ws://`` or ``wss://`` prefixes are currently not supported. We support URLs that include the API's bearer token as is the case with, e.g., Infura or Alchemy.
+* ``RPC_API_KEY`` is the API key for the host extraction requests are made against. It must be set if an Ethereum full node was provisioned behind an HTTP proxy that requires a bearer token authorization via the HTTP ``Authorization`` header. In this case, the header is structurally set as follows: ``Authorization: Bearer ${RPC_API_KEY}``.
+* ``DATA_DIR``\* is the directory that stores all results from extraction and transformation of the crawler. It must be set to a file system path (relative or absolute).
+* ``IPFS_HTTPS_GATEWAY``\* describes the host that IPFS extraction requests are made against. A list of publicly accessible IPFS gateways can be found `here <https://ipfs.github.io/public-gateway-checker/>`_.
+* ``IPFS_HTTPS_GATEWAY_KEY`` is the API key for the IPFS host extraction requests are made against. It must be set if an IPFS node was provisioned behind an HTTP proxy that requires a bearer token authorization via the HTTP ``Authorization`` header. In this case, the header is structurally set as follows: ``Authorization: Bearer ${IPFS_HTTPS_GATEWAY_KEY}``.
+* ``ARWEAVE_HTTPS_GATEWAY``\* describes the host that Arweave extraction requests are made against. A commonly-used Arweave gateway is ``https://arweave.net``.
 
 .. note::
    In some cases, you may only work with Ethereum, however, the crawler will
@@ -45,6 +51,27 @@ to run:
    full node providers will append the API key in the ``RPC_HTTP_HOST`` URI. In
    those cases it is sufficient to define those variables as an empty string:
    ``RPC_API_KEY=""``.
+
+Overwriting environment variables in the configuration
+------------------------------------------------------
+
+To use the crawler in downstream applications in JavaScript, we want to avoid
+leaking the requirement of ``dotenv``, which requires a ``.env`` file to be
+present in the application folder.
+
+Hence, applications don't need to define the environmental variables in a
+``.env`` file, they can pass those into the ``function boot(config)`` in
+``config.environment``. However, those variables' names will then be mapped to
+camel case such that ``RPC_HTTP_HOST`` becomes ``rpcHttpHost``.
+
+Defining ``config.environment.rpcHttpHost`` will take presedence over
+``RPC_HTTP_HOST``.
+
+.. note::
+   For all downstream applications, like strategies, the environment variables
+   will always be defined, independently of whether the developer choses to
+   write them in the ``config.mjs`` or ``.env`` file.
+
 
 ..  _configuration-crawl-path:
 
@@ -67,6 +94,13 @@ Structurally, it is defined as follows:
     // First, there is the crawl path property, which we'll describe later in
     // this section.
     path: { 
+      "...": "..."
+    },
+    // All environment variables can be alternatively defined as properties in
+    // the configuration file. However, they're using camel-case format here, such
+    // that "RPC_HTTP_HOST" becomes "rpcHttpHost".
+    environment: {
+      "rpcHttpHost": "https://example.com",
       "...": "..."
     },
     queue: {

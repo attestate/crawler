@@ -1,4 +1,3 @@
-import { env } from "process";
 import { resolve } from "path";
 
 import * as blockLogs from "@attestate/crawler-call-block-logs";
@@ -15,6 +14,7 @@ const topics = [
   "0x0000000000000000000000000000000000000000000000000000000000000000",
 ];
 
+const dataDir = resolve("./data");
 export default {
   path: [
     {
@@ -23,26 +23,26 @@ export default {
         module: blockLogs.extractor,
         args: [range.start, range.end, address, topics, stepSize],
         output: {
-          path: resolve(env.DATA_DIR, "call-block-logs-extraction"),
+          path: resolve(dataDir, "call-block-logs-extraction"),
         },
       },
       transformer: {
         module: blockLogs.transformer,
         args: [],
         input: {
-          path: resolve(env.DATA_DIR, "call-block-logs-extraction"),
+          path: resolve(dataDir, "call-block-logs-extraction"),
         },
         output: {
-          path: resolve(env.DATA_DIR, "call-block-logs-transformation"),
+          path: resolve(dataDir, "call-block-logs-transformation"),
         },
       },
       loader: {
         module: blockLogs.loader,
         input: {
-          path: resolve(env.DATA_DIR, "call-block-logs-transformation"),
+          path: resolve(dataDir, "call-block-logs-transformation"),
         },
         output: {
-          path: resolve(env.DATA_DIR, "call-block-logs-load"),
+          path: resolve(dataDir, "call-block-logs-load"),
         },
       },
     },

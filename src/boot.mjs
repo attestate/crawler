@@ -35,8 +35,7 @@ export function validateConfig(config) {
 }
 
 export async function createWorker(config) {
-  environment.validate(environment.requiredVars);
-  await disc.provisionDir(resolve(env.DATA_DIR));
+  await disc.provisionDir(resolve(config.environment.dataDir));
 
   const worker = new Worker(workerPath, {
     workerData: config,
@@ -45,8 +44,19 @@ export async function createWorker(config) {
   return worker;
 }
 
+export function augment(config) {
+  const { requiredVars, optionalVars } = environment;
+  const collected = environment.collect({ ...requiredVars, ...optionalVars });
+  const configEnv = config.environment ?? {};
+  const copy = { ...config };
+  copy.environment = { ...configEnv, ...collected };
+  return copy;
+}
+
 export async function boot(config) {
+  config = augment(config);
   validateConfig(config);
+  environment.set(config.environment);
   // NOTE: We still use @neume-network/extraction-worker that implements a
   // older version of the crawler configuration. But since in
   // @attestate/crawler, we've merged the path and the config, we'll have to

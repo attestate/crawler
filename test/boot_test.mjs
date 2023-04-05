@@ -4,9 +4,53 @@ import { env } from "process";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 
-import { boot, createWorker, getConfig, validateConfig } from "../src/boot.mjs";
+import {
+  boot,
+  createWorker,
+  getConfig,
+  validateConfig,
+  augment,
+} from "../src/boot.mjs";
+
+import configuration from "../src/schemata/configuration.mjs";
+import { requiredVars } from "../src/environment.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+test("if required environment vars in module and schema match", (t) => {
+  const configVars = configuration.properties.environment.required;
+  const envVars = Object.values(requiredVars);
+  t.deepEqual(configVars, envVars);
+});
+
+test.serial("if non-existent environment object is handled gracefully", (t) => {
+  env.RPC_API_KEY = "ABC";
+  const config = {};
+  const nextConfig = augment(config);
+  t.is(nextConfig.environment.rpcApiKey, env.RPC_API_KEY);
+});
+
+test.serial("falling back on config vars when env vars aren't present", (t) => {
+  delete env.RPC_API_KEY;
+  const config = {
+    environment: {
+      rpcApiKey: "key",
+    },
+  };
+  const nextConfig = augment(config);
+  t.is(nextConfig.environment.rpcApiKey, config.environment.rpcApiKey);
+});
+
+test.serial("overwriting config variables with the environment", (t) => {
+  env.RPC_API_KEY = "OVERWRITE";
+  const config = {
+    environment: {
+      rpcApiKey: "key",
+    },
+  };
+  const nextConfig = augment(config);
+  t.is(nextConfig.environment.rpcApiKey, env.RPC_API_KEY);
+});
 
 test.serial("if boot can be started programmatically", async (t) => {
   let hitInit = false;
@@ -76,7 +120,10 @@ test.serial("if boot can throw errors", async (t) => {
 
 test.serial("should be able to create worker", (t) => {
   return new Promise((resolve, reject) => {
-    createWorker({ queue: { options: { concurrent: 10 } } }).then((w) => {
+    createWorker({
+      environment: { dataDir: "data" },
+      queue: { options: { concurrent: 10 } },
+    }).then((w) => {
       setTimeout(() => {
         // NOTE: no error has occured until now, safe to pass the test
         t.pass();

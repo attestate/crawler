@@ -3,7 +3,6 @@ import path from "path";
 import { createInterface } from "readline";
 import { createReadStream, appendFileSync } from "fs";
 import EventEmitter, { once } from "events";
-import { env } from "process";
 
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
@@ -23,7 +22,6 @@ export const EXTRACTOR_CODES = {
 };
 
 const log = logger("lifecycle");
-const dataDir = path.resolve(env.DATA_DIR);
 const ajv = new Ajv();
 addFormats(ajv);
 
