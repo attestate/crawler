@@ -12,7 +12,7 @@ Extractor
 ---------
 
 * An extractor strategy's purpose is to communicate with the `extraction worker
-  <https://github.com/neume-network/extraction-worker>`_ by passing canonical
+  <https://github.com/attestate/extraction-worker>`_ by passing canonical
   messages back and forth. The worker implements support for a variety of data
   sources including IPFS, Arweave, GraphQL and JSON-RPC. 
 * All worker messages are  defined using JSON schema. To look-up a message's
@@ -39,7 +39,7 @@ of object that contain a ``messages: Array`` property and a ``write: String ||
 null``. ``write``'s value is written directly into a flat file at
 ``config.path[].extractor.output.path`` (line by line). All elements in
 ``messages`` are forwarded to the `extraction worker
-<https://github.com/neume-network/extraction-worker>`_. They are returned to
+<https://github.com/attestate/extraction-worker>`_. They are returned to
 ``function update(message)`` upon completion.
 
 An example:

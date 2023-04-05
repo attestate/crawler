@@ -57,10 +57,8 @@ export async function boot(config) {
   config = augment(config);
   validateConfig(config);
   environment.set(config.environment);
-  // NOTE: We still use @neume-network/extraction-worker that implements a
-  // older version of the crawler configuration. But since in
-  // @attestate/crawler, we've merged the path and the config, we'll have to
-  // pass a copy to it that doesn't include it.
+  // NOTE: @attestate/extraction-worker still supports an old version of the
+  // schema, where the path and the configuration haven't been merged yet.
   const configCopy = { ...config };
   delete configCopy.path;
   const worker = await createWorker(configCopy);

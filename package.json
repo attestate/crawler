@@ -30,15 +30,15 @@
   },
   "homepage": "https://github.com/attestate/crawler#readme",
   "dependencies": {
-    "@neume-network/extraction-worker": "0.7.1",
+    "@attestate/extraction-worker": "0.7.2",
     "ajv": "8.11.0",
     "ajv-formats": "2.1.1",
     "debug": "4.3.4",
     "dotenv": "16.0.0",
     "eth-fun": "0.9.1",
     "lmdb": "2.7.9",
-    "yargs": "17.5.1",
-    "lodash.invert": "4.3.0"
+    "lodash.invert": "4.3.0",
+    "yargs": "17.5.1"
   },
   "devDependencies": {
     "@attestate/crawler-call-block-logs": "0.2.2",
