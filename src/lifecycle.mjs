@@ -9,7 +9,7 @@ import addFormats from "ajv-formats";
 import util from "util";
 import { open } from "lmdb";
 
-import { SEPARATOR, MARKER_ORDER, MARKER_DIRECT } from "./database.mjs";
+import * as database from "./database.mjs";
 import workerMessage from "./schemata/messages/worker.mjs";
 import { NotFoundError } from "./errors.mjs";
 import { fileExists } from "./disc.mjs";
@@ -205,21 +205,15 @@ export async function load(name, strategy, db) {
     crlfDelay: Infinity,
   });
 
-  const pack = (value) => {
-    if (Array.isArray(value)) return value;
-    return [value];
-  };
   for await (const line of rl) {
     if (line === "") continue;
 
-    const orderDB = db.openDB(`${name}${SEPARATOR}${MARKER_ORDER}`);
     for (const { key, value } of strategy.module.order(line)) {
-      await orderDB.put(pack(key), value);
+      await database.toOrder(db, name, key, value);
     }
 
-    const directDB = db.openDB(`${name}${SEPARATOR}${MARKER_DIRECT}`);
     for (const { key, value } of strategy.module.direct(line)) {
-      await directDB.put(pack(key), value);
+      await database.toDirect(db, name, key, value);
     }
   }
 }

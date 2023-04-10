@@ -34,7 +34,7 @@ const mockMessage = {
 
 test("direct load function", async (t) => {
   let count = 0;
-  t.plan(8);
+  t.plan(6);
   const dbMock = {
     openDB: (name) => {
       t.true(name === "test-strategy:direct" || name === "test-strategy:order");
@@ -76,7 +76,7 @@ test("direct load function", async (t) => {
 
 test("order load function", async (t) => {
   let count = 0;
-  t.plan(8);
+  t.plan(6);
   const dbMock = {
     openDB: (name) => {
       t.true(name === "test-strategy:direct" || name === "test-strategy:order");
