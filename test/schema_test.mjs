@@ -75,21 +75,21 @@ test("should be a valid crawlPath", (t) => {
           init: () => {},
           update: () => {},
         },
-        args: [],
+        args: {},
         output: {
-          path: "output",
+          name: "output",
         },
       },
       transformer: {
         module: {
           onLine: () => {},
         },
-        args: [],
+        args: {},
         input: {
-          path: "input",
+          name: "input",
         },
         output: {
-          path: "output",
+          name: "output",
         },
       },
       loader: {
@@ -98,10 +98,10 @@ test("should be a valid crawlPath", (t) => {
           direct: function* () {},
         },
         input: {
-          path: "input",
+          name: "input",
         },
         output: {
-          path: "output",
+          name: "output",
         },
       },
     },
@@ -112,21 +112,21 @@ test("should be a valid crawlPath", (t) => {
           init: () => {},
           update: () => {},
         },
-        args: [],
+        args: {},
         output: {
-          path: "output",
+          name: "output",
         },
       },
       transformer: {
         module: {
           onLine: () => {},
         },
-        args: [],
+        args: {},
         input: {
-          path: "input",
+          name: "input",
         },
         output: {
-          path: "output",
+          name: "output",
         },
       },
     },

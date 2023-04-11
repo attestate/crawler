@@ -85,9 +85,9 @@ test.serial("if boot can be started programmatically", async (t) => {
             };
           },
         },
-        args: [],
+        args: {},
         output: {
-          path: "output",
+          name: "output",
         },
       },
     },

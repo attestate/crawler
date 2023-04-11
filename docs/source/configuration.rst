@@ -144,10 +144,10 @@ The crawler implements an :ref:`Extract, Transform and Load
 task's phases. Attestate Crawler executes them sequentially in order: (1)
 extraction, (2) transformation, (3) loading.
 
-Below is a fully configured crawl path to fetch **all** Ethereum block logs
-within a range of ``start=0`` block and ``end=1`` block (``extractor.args``).
-The output of the requests are stored in ``extractor.output.path`` with the
-pre-configured ``DATA_DIR`` environment variable.
+Below is a fully configured crawl path to fetch **all** Ethereum block logs and
+the arguments declared as an object ``{start: 0, end: 1}``. The output of the
+requests are stored in ``extractor.output.name`` with the pre-configured
+``DATA_DIR`` environment variable.
 
 .. code-block:: javascript
 
@@ -162,11 +162,9 @@ pre-configured ``DATA_DIR`` environment variable.
           update: (message) => { /* ... */ },
         },
         // NOTE: The arguments are passed into the module's init function
-        args: [0, 1],
+        args: {start: 0, end: 1},
         output: {
-          // NOTE: An output path is defined to persist the extractor's
-          // requests.
-          path: resolve(env.DATA_DIR, "call-block-logs-extraction"),
+          name: "call-block-logs-extraction",
         },
       },
       "...": "..."
@@ -176,21 +174,10 @@ pre-configured ``DATA_DIR`` environment variable.
 Upon completing extraction, a transformation is scheduled to filter events by
 the EIP-20/EIP-721 transfer signature. A transformer's module consists of a
 single ``function onLine(line)`` that is invoked for each line of the
-``transformer.input.path``. The input's path is set to the data we have
-extracted in the extraction phase prioly.
+``transformer.input.name``. 
 
 .. code-block:: javascript
 
-  /*
-   * NOTE: After the extraction phase, we're filtering all events by topics.
-   * We're generating the transfer event's signature using the keccak256 hash
-   * function.
-   *
-   *  keccak256("Transfer(address,address,uint256)") == "0xddf...";
-   */
-
-  const topic0 =
-  "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
   const path = [
     {
       name: "call-block-logs",
@@ -200,14 +187,25 @@ extracted in the extraction phase prioly.
           // NOTE: onLine gets invoked for each line in `input.path`.
           onLine: line => { /* ... */ },
         },
-        args: [topic0],
-        // NOTE: A transformer always requires an `input.path` and `output.path`
-        // property to be present.
+        args: {
+          topics: [
+            /*
+             * NOTE: After the extraction phase, we're filtering all events by topics.
+             * We're generating the transfer event's signature using the keccak256 hash
+             * function.
+             *
+             *  keccak256("Transfer(address,address,uint256)") == "0xddf...";
+             */
+            "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+          ]
+        },
+        // NOTE: A transformer always requires an `input.name` and
+        // `output.name` // property to be present.
         input: {
-          path: resolve(env.DATA_DIR, "call-block-logs-extraction"),
+          name: "call-block-logs-extraction",
         },
         output: {
-          path: resolve(env.DATA_DIR, "call-block-logs-transformation"),
+          name: "call-block-logs-transformation",
         },
       },
       "...": "...",
@@ -256,10 +254,10 @@ points:
           },
         },
         input: {
-          path: resolve(env.DATA_DIR, "call-block-logs-transformer"),
+          name: "call-block-logs-transformer",
         },
         output: {
-          path: resolve(env.DATA_DIR, "call-block-logs-loader"),
+          name: "call-block-logs-loader",
         }
       }
     },

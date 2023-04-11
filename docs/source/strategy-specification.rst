@@ -29,15 +29,15 @@ Extractor
   when an explicit ``type: "exit"`` `message
   <https://github.com/attestate/crawler/blob/main/src/schemata/messages/exit.mjs>`_
   is sent to a worker.
-* ``config.path[].extractor.args`` is an array of values that the crawler
-  passes into an extractor's ``function init(args[0], args[1], ...)``.
+* ``config.path[].extractor.args`` is an object of values that the crawler
+  passes into an extractor's ``function init(args)``.
 
 **Lifecycle Return Message**:
 
 Return values of ``function init()`` and ``function update()`` must be a type
 of object that contain a ``messages: Array`` property and a ``write: String ||
 null``. ``write``'s value is written directly into a flat file at
-``config.path[].extractor.output.path`` (line by line). All elements in
+``config.path[].extractor.output.name`` (line by line). All elements in
 ``messages`` are forwarded to the `extraction worker
 <https://github.com/attestate/extraction-worker>`_. They are returned to
 ``function update(message)`` upon completion.
@@ -49,7 +49,7 @@ An example:
 
   function init() {
     return {
-      // NOTE: We write hello world to a new line at `output.path`.
+      // NOTE: We write hello world to a new line at `output.name`.
       write: "hello world",
       // NOTE: We also fire a request to our Ethereum full node asking to
       //  download the event logs from block 0 to block 1 for the DAI stablecoin
@@ -78,19 +78,22 @@ Transformer
 
 * A transformer's purpose is to sanitize, rearrange and filter data on the
   user's file system after an extraction. The ``@attestate/crawler`` reads the
-  ``config.path[].input.path`` line-by-line and invokes the ``function
+  ``config.path[].input.name`` line-by-line and invokes the ``function
   onLine(line)``.
 * A transformer ESM module exports a ``function onLine(line, ...args)`` that
   must return an object containing a property ``write: String``. It doesn't
   trigger new extraction worker messages.
-* ``config.path[].transformer.args`` is an array of values that the crawler
-  passes into an transformer's ``function onLine(line, args[0], args[1],
-  ...)``. Note, however, that the first argument passed into ``function
-  onLine(...)`` is always the ``line: String``, an argument passed-in from the
-  crawler itself.
+* ``config.path[].transformer.args`` is an object of values that the crawler
+  passes into an transformer's ``function onLine(line, args)``. Note, however,
+  that the first argument passed into ``function onLine(...)`` is always the
+  ``line: String``, an argument passed-in from the crawler itself.
 
 .. note::
-  Consider that running a transformer on extraction results is much cheaper than re-extracting data from external sources. So when building a new strategy, instead of making the extractor fail when an API has changed, ensure that the transformer fails as it's cheap to re-run.
+
+  Consider that running a transformer on extraction results is much cheaper
+  than re-extracting data from external sources. So when building a new
+  strategy, instead of making the extractor fail when an API has changed,
+  ensure that the transformer fails as it's cheap to re-run.
 
 Loader
 ------
@@ -112,7 +115,7 @@ Loader
   documentation <https://www.npmjs.com/package/lmdb>`_.
 
 Internally, the Attestate Crawler will create a new LMDB instance at
-``config.path[].loader.output.path``. For each strategy, it'll create "order"
+``config.path[].loader.output.name``. For each strategy, it'll create "order"
 and "direct" tables from the following naming scheme
 
 * for order ``{config.path[].strategy.name}:order`` and

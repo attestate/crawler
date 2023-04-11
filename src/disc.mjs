@@ -1,6 +1,13 @@
 // @format
+import { env } from "process";
+import { resolve } from "path";
 import { constants } from "fs";
 import { access, mkdir } from "fs/promises";
+
+export function inDataDir(name) {
+  const path = resolve(env.DATA_DIR, name);
+  return path;
+}
 
 export async function fileExists(filePath) {
   try {

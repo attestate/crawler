@@ -1,5 +1,4 @@
 //@format
-import path from "path";
 import { createInterface } from "readline";
 import { createReadStream, appendFileSync } from "fs";
 import EventEmitter, { once } from "events";
@@ -12,7 +11,7 @@ import { open } from "lmdb";
 import * as database from "./database.mjs";
 import workerMessage from "./schemata/messages/worker.mjs";
 import { NotFoundError } from "./errors.mjs";
-import { fileExists } from "./disc.mjs";
+import { inDataDir, fileExists } from "./disc.mjs";
 import logger from "./logger.mjs";
 
 export const EXTRACTOR_CODES = {
@@ -50,22 +49,24 @@ export function prepareMessages(messages, commissioner) {
 }
 
 export async function transform(name, strategy) {
-  if (!(await fileExists(strategy.input.path))) {
+  const inputPath = inDataDir(strategy.input.name);
+  if (!(await fileExists(inputPath))) {
     log(
-      `Skipping "${name}" transformation as input path doesn't exist "${strategy.input.path}"`
+      `Skipping "${name}" transformation as input path doesn't exist "${inputPath}"`
     );
     return;
   }
   const rl = createInterface({
-    input: createReadStream(strategy.input.path),
+    input: createReadStream(inputPath),
     crlfDelay: Infinity,
   });
 
+  const outputPath = inDataDir(strategy.output.name);
   let buffer = [];
   rl.on("line", async (line) => {
-    const write = strategy.module.onLine(line, ...strategy.args);
+    const write = strategy.module.onLine(line, strategy.args);
     if (write) {
-      appendFileSync(strategy.output.path, `${write}\n`);
+      appendFileSync(outputPath, `${write}\n`);
     }
   });
   // TODO: Figure out how `onError` shall be handled.
@@ -76,7 +77,7 @@ export async function transform(name, strategy) {
   await once(rl, "close");
   const write = strategy.module.onClose();
   if (write) {
-    appendFileSync(strategy.output.path, `${write}\n`);
+    appendFileSync(outputPath, `${write}\n`);
   }
   return buffer;
 }
@@ -93,7 +94,7 @@ export function extract(name, strategy, worker, messageRouter) {
 
     let result;
     try {
-      result = await strategy.module.init(...strategy.args);
+      result = await strategy.module.init(strategy.args);
     } catch (err) {
       reject(err);
     }
@@ -108,12 +109,13 @@ export function extract(name, strategy, worker, messageRouter) {
       return reject(error);
     }
 
+    const outputPath = inDataDir(strategy.output.name);
     if (result.write) {
       try {
-        appendFileSync(strategy.output.path, `${result.write}\n`);
+        appendFileSync(outputPath, `${result.write}\n`);
       } catch (err) {
         const error = new Error(
-          `Couldn't write to file after update. Filepath: "${strategy.output.path}", Content: "${result.write}"`
+          `Couldn't write to file after update. Output path: "${outputPath}", Content: "${result.write}"`
         );
         error.code = EXTRACTOR_CODES.FAILURE;
         clearInterval(interval);
@@ -157,10 +159,10 @@ export function extract(name, strategy, worker, messageRouter) {
 
         if (result.write) {
           try {
-            appendFileSync(strategy.output.path, `${result.write}\n`);
+            appendFileSync(outputPath, `${result.write}\n`);
           } catch (err) {
             const error = new Error(
-              `Couldn't write to file after update. Filepath: "${strategy.output.path}", Content: "${result.write}"`
+              `Couldn't write to file after update. Output Path: "${outputPath}", Content: "${result.write}"`
             );
             error.code = EXTRACTOR_CODES.FAILURE;
             messageRouter.off(`${name}-${type}`, callback);
@@ -200,8 +202,9 @@ export function extract(name, strategy, worker, messageRouter) {
 }
 
 export async function load(name, strategy, db) {
+  const inputPath = inDataDir(strategy.input.name);
   const rl = createInterface({
-    input: createReadStream(strategy.input.path),
+    input: createReadStream(inputPath),
     crlfDelay: Infinity,
   });
 
@@ -262,7 +265,7 @@ export async function init(worker, crawlPath) {
     if (strategy.loader) {
       log(`Starting loader strategy "${strategy.name}"`);
       const db = new open({
-        path: strategy.loader.output.path,
+        path: inDataDir(strategy.loader.output.name),
       });
       await load(strategy.name, strategy.loader, db);
       log(`Ending loader strategy "${strategy.name}"`);

@@ -6,7 +6,7 @@ import { fileURLToPath } from "url";
 import EventEmitter from "events";
 import test from "ava";
 
-import { fileExists } from "../src/disc.mjs";
+import { inDataDir, fileExists } from "../src/disc.mjs";
 import {
   extract,
   transform,
@@ -52,10 +52,10 @@ test("direct load function", async (t) => {
     name: "test-strategy",
     loader: {
       input: {
-        path: resolve(__dirname, "./fixtures/file1.data"),
+        name: "../test/fixtures/file1.data",
       },
       output: {
-        path: resolve(__dirname, "./fixtures/file1.output"),
+        name: "../test/fixtures/file1.output",
       },
       module: {
         order: function* () {},
@@ -94,10 +94,10 @@ test("order load function", async (t) => {
     name: "test-strategy",
     loader: {
       input: {
-        path: resolve(__dirname, "./fixtures/file1.data"),
+        name: "../test/fixtures/file1.data",
       },
       output: {
-        path: resolve(__dirname, "./fixtures/file1.output"),
+        name: "../test/fixtures/file1.output",
       },
       module: {
         direct: function* () {},
@@ -121,7 +121,7 @@ test("if function transform gracefully returns when sourceFile doesn't exist", a
     name: "test-strategy",
     transformer: {
       input: {
-        path: "doesn't exist",
+        name: "doesn't exist",
       },
       module: {
         onLine: () => {},
@@ -135,8 +135,8 @@ test("if function transform gracefully returns when sourceFile doesn't exist", a
 test("reading a file by line using the line reader", async (t) => {
   let count = 0;
   t.plan(5);
-  const lineHandlerMock = (line, argument1) => {
-    t.is(argument1, "argument1");
+  const lineHandlerMock = (line, { arg1 }) => {
+    t.is(arg1, "argument1");
     if (count === 0) t.is(line, "line0");
     if (count === 1) t.is(line, "line1");
     count++;
@@ -149,12 +149,12 @@ test("reading a file by line using the line reader", async (t) => {
         onLine: lineHandlerMock,
         onClose: () => {},
       },
-      args: ["argument1"],
+      args: { arg1: "argument1" },
       input: {
-        path: resolve(__dirname, "./fixtures/file0.data"),
+        name: "../test/fixtures/file0.data",
       },
       output: {
-        path: resolve(__dirname, "./fixtures/file0.output"),
+        name: "../test/fixtures/file0.output",
       },
     },
   };
@@ -162,12 +162,12 @@ test("reading a file by line using the line reader", async (t) => {
   await transform(strategy.name, strategy.transformer);
   t.is(count, 2);
   try {
-    await access(strategy.transformer.output.path, constants.R_OK);
+    await access(inDataDir(strategy.transformer.output.name), constants.R_OK);
   } catch (err) {
     t.log(err);
     t.fail();
   } finally {
-    await unlink(strategy.transformer.output.path);
+    await unlink(inDataDir(strategy.transformer.output.name));
   }
 });
 
@@ -231,9 +231,9 @@ test("if extract function can handle lifecycle errors", async (t) => {
     name: mockMessageCommissioner,
     extractor: {
       output: {
-        path: "path",
+        name: "name",
       },
-      args: [],
+      args: {},
       module: {
         init: () => {
           return {
@@ -272,9 +272,9 @@ test("if extract() resolves the promise and removes the listener on no new messa
     name: mockMessageCommissioner,
     extractor: {
       output: {
-        path: "path",
+        name: "name",
       },
-      args: [],
+      args: {},
       module: {
         init: () => {
           return { messages: [mockMessage], write: null };
@@ -305,9 +305,9 @@ test("if extract() resolves the promise and removes the listener on no message f
     name: "a name",
     extractor: {
       output: {
-        path: "path",
+        name: "name",
       },
-      args: [],
+      args: {},
       module: {
         init: () => {
           return { messages: [], write: null };
@@ -339,14 +339,14 @@ test("if extract() resolves the promise and removes the listener on no message f
   t.pass();
 });
 
-test("if extract function can write to the correct output path", async (t) => {
+test("if extract function can write to the correct output name", async (t) => {
   const mockStrategy = {
     name: "a name",
     extractor: {
       output: {
-        path: resolve(__dirname, "./fixtures/file3.output"),
+        name: "../test/fixtures/file3.output",
       },
-      args: [],
+      args: {},
       module: {
         init: () => {
           return { messages: [], write: "some-test-data" };
@@ -368,8 +368,8 @@ test("if extract function can write to the correct output path", async (t) => {
   const router = new EventEmitter();
 
   await extract(mockStrategy.name, mockStrategy.extractor, worker, router);
-  t.is(await fileExists(mockStrategy.extractor.output.path), true);
-  await unlink(mockStrategy.extractor.output.path);
+  t.is(await fileExists(inDataDir(mockStrategy.extractor.output.name)), true);
+  await unlink(inDataDir(mockStrategy.extractor.output.name));
 });
 
 test("if prepareMessages filters invalid message and prepare message for worker", async (t) => {

@@ -10,6 +10,11 @@ const path = {
         // PROBLEM: The message router expects a globally unique strategy name
         $comment: "strategy names for now must be globally unique",
       },
+      interval: {
+        type: "integer",
+        $comment:
+          "The time in milliseconds after which a task is re-run automatically.",
+      },
       extractor: {
         type: "object",
         properties: {
@@ -17,25 +22,25 @@ const path = {
             type: "object",
           },
           args: {
-            type: "array",
+            type: "object",
           },
           input: {
             type: "object",
             properties: {
-              path: {
+              name: {
                 type: "string",
               },
             },
-            required: ["path"],
+            required: ["name"],
           },
           output: {
             type: "object",
             properties: {
-              path: {
+              name: {
                 type: "string",
               },
             },
-            required: ["path"],
+            required: ["name"],
           },
         },
         required: ["output", "module", "args"],
@@ -48,25 +53,25 @@ const path = {
             type: "object",
           },
           args: {
-            type: "array",
+            type: "object",
           },
           input: {
             type: "object",
             properties: {
-              path: {
+              name: {
                 type: "string",
               },
             },
-            required: ["path"],
+            required: ["name"],
           },
           output: {
             type: "object",
             properties: {
-              path: {
+              name: {
                 type: "string",
               },
             },
-            required: ["path"],
+            required: ["name"],
           },
         },
         required: ["input", "output", "module", "args"],
@@ -81,20 +86,20 @@ const path = {
           input: {
             type: "object",
             properties: {
-              path: {
+              name: {
                 type: "string",
               },
             },
-            required: ["path"],
+            required: ["name"],
           },
           output: {
             type: "object",
             properties: {
-              path: {
+              name: {
                 type: "string",
               },
             },
-            required: ["path"],
+            required: ["name"],
           },
         },
         required: ["input", "output", "module"],
