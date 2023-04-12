@@ -1,12 +1,13 @@
 //@format
 import { createInterface } from "readline";
 import { createReadStream, appendFileSync } from "fs";
+import { rm, rename } from "fs/promises";
 import EventEmitter, { once } from "events";
 
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
 import util from "util";
-import { open } from "lmdb";
+import { execute } from "@attestate/extraction-worker";
 
 import * as database from "./database.mjs";
 import workerMessage from "./schemata/messages/worker.mjs";
@@ -48,7 +49,7 @@ export function prepareMessages(messages, commissioner) {
     .filter(validateWorkerMessage);
 }
 
-export async function transform(name, strategy) {
+export async function transform(name, strategy, state) {
   const inputPath = inDataDir(strategy.input.name);
   if (!(await fileExists(inputPath))) {
     log(
@@ -63,26 +64,31 @@ export async function transform(name, strategy) {
 
   const outputPath = inDataDir(strategy.output.name);
   let buffer = [];
-  rl.on("line", async (line) => {
-    const write = strategy.module.onLine(line, strategy.args);
+  rl.on("line", (line) => {
+    const stateCopy = { ...state, line };
+    const props = { args: strategy.args, state: stateCopy, execute };
+    const write = strategy.module.onLine(props);
     if (write) {
       appendFileSync(outputPath, `${write}\n`);
     }
   });
   // TODO: Figure out how `onError` shall be handled.
+  // NOTE: Actually, new strategies don't even implement this anymore.
   rl.on("error", (error) => {
-    const write = strategy.onError(error);
+    const props = { args: strategy.args, state, error, execute };
+    const write = strategy.module.onError(props);
   });
 
   await once(rl, "close");
-  const write = strategy.module.onClose();
+  const props = { args: strategy.args, state, execute };
+  const write = strategy.module.onClose(props);
   if (write) {
     appendFileSync(outputPath, `${write}\n`);
   }
   return buffer;
 }
 
-export function extract(name, strategy, worker, messageRouter) {
+export function extract(name, strategy, worker, messageRouter, state) {
   return new Promise(async (resolve, reject) => {
     let numberOfMessages = 0;
     const type = "extraction";
@@ -93,8 +99,9 @@ export function extract(name, strategy, worker, messageRouter) {
     }, 120_000);
 
     let result;
+    const props = { args: strategy.args, state, execute };
     try {
-      result = await strategy.module.init(strategy.args);
+      result = await strategy.module.init(props);
     } catch (err) {
       reject(err);
     }
@@ -133,8 +140,9 @@ export function extract(name, strategy, worker, messageRouter) {
         );
       } else {
         let result;
+        const props = { args: strategy.args, state, message, execute };
         try {
-          result = await strategy.module.update(message);
+          result = await strategy.module.update(props);
         } catch (err) {
           reject(err);
         }
@@ -201,7 +209,7 @@ export function extract(name, strategy, worker, messageRouter) {
   });
 }
 
-export async function load(name, strategy, db) {
+export async function load(name, strategy, db, state) {
   const inputPath = inDataDir(strategy.input.name);
   const rl = createInterface({
     input: createReadStream(inputPath),
@@ -211,21 +219,21 @@ export async function load(name, strategy, db) {
   for await (const line of rl) {
     if (line === "") continue;
 
-    for (const { key, value } of strategy.module.order(line)) {
+    const stateCopy = { ...state, line };
+    const props = { args: strategy.args, state: stateCopy, execute };
+    for (const { key, value } of strategy.module.order(props)) {
       await database.toOrder(db, name, key, value);
     }
 
-    for (const { key, value } of strategy.module.direct(line)) {
+    for (const { key, value } of strategy.module.direct(props)) {
       await database.toDirect(db, name, key, value);
     }
   }
 }
 
-export async function init(worker, crawlPath) {
-  const messageRouter = new EventEmitter();
-
+function subscribe(messageRouter, worker) {
   worker.on("message", (message) => {
-    // This is fatal we can't continue
+    // NOTE: This is fatal and we can't continue
     if (!message.commissioner) {
       throw new Error(
         `Can't redirect; message.commissioner is ${message.commissioner}`
@@ -234,10 +242,29 @@ export async function init(worker, crawlPath) {
       messageRouter.emit(`${message.commissioner}-extraction`, message);
     }
   });
+}
 
+export async function latest(db, name, module) {
+  const subdb = db.openDB(database.order(name));
+  const local = await module.local(subdb);
+  const remote = await module.remote(execute);
+  return {
+    local,
+    remote,
+  };
+}
+
+async function compute(db, name, module) {
+  if (!db || (!module && (!module.local || !module.remote))) {
+    return {};
+  }
+  return await latest(db, name, module);
+}
+
+async function walk(worker, config, messageRouter) {
   log(
-    `Starting to execute strategies with the following crawlPath`,
-    util.inspect(crawlPath, {
+    `Starting to execute strategies with the following crawl path`,
+    util.inspect(config.path, {
       depth: null,
       colors: true,
       breakLength: "Infinity",
@@ -245,32 +272,82 @@ export async function init(worker, crawlPath) {
     })
   );
 
-  for await (const strategy of crawlPath) {
+  for await (const strategy of config.path) {
+    let db;
+    if (strategy?.loader?.output?.name) {
+      const path = inDataDir(strategy.loader.output.name);
+      db = database.open(path);
+    }
+    const state = await compute(
+      db,
+      strategy.name,
+      strategy.coordinator?.module
+    );
+
     if (strategy.extractor) {
       log(
         `Starting extractor strategy "${
           strategy.name
         }" with params "${JSON.stringify(strategy.extractor.args)}"`
       );
-      await extract(strategy.name, strategy.extractor, worker, messageRouter);
+      await extract(
+        strategy.name,
+        strategy.extractor,
+        worker,
+        messageRouter,
+        state
+      );
       log(`Ending extractor strategy "${strategy.name}"`);
     }
 
     if (strategy.transformer) {
       log(`Starting transformer strategy "${strategy.name}"`);
-      await transform(strategy.name, strategy.transformer);
+      await transform(strategy.name, strategy.transformer, state);
       log(`Ending transformer strategy "${strategy.name}"`);
     }
 
     if (strategy.loader) {
       log(`Starting loader strategy "${strategy.name}"`);
-      const db = new open({
-        path: inDataDir(strategy.loader.output.name),
-      });
-      await load(strategy.name, strategy.loader, db);
+      await load(strategy.name, strategy.loader, db, state);
       log(`Ending loader strategy "${strategy.name}"`);
     }
   }
+}
+
+export async function cleanup(worker, config) {
+  // NOTE: Only the first path can, for now, be coordinated and repeated
+  const path = config.path[0];
+  if (!path.coordinator?.interval) {
+    log(
+      "Coordinator's interval isn't defined, hence, returning without iteration"
+    );
+    return;
+  }
+
+  log(`Renaming extractor and transformer outputs to then repeat task`);
+  const archive = (name) => `${Date.now()}_${name}`;
+
+  await rename(
+    inDataDir(path.extractor.output.name),
+    inDataDir(archive(path.extractor.output.name))
+  );
+  await rename(
+    inDataDir(path.transformer.output.name),
+    inDataDir(archive(path.transformer.output.name))
+  );
+
+  log(`Waiting "${path.coordinator.interval}ms" to repeat the task`);
+  await new Promise((resolve) =>
+    setTimeout(resolve, path.coordinator.interval)
+  );
+  return init(worker, config);
+}
+
+export async function init(worker, config) {
+  const messageRouter = new EventEmitter();
+  subscribe(messageRouter, worker);
+  await walk(worker, config, messageRouter);
+  await cleanup(worker, config);
 
   log("All strategies executed");
   worker.postMessage({

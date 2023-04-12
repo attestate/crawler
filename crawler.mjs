@@ -9,10 +9,9 @@ import { resolve } from "path";
 
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { open } from "LMDB";
 
 import { boot, getConfig } from "./src/boot.mjs";
-import { SEPARATOR, all } from "./src/database.mjs";
+import { open, SEPARATOR, all } from "./src/database.mjs";
 
 const argv = yargs(hideBin(process.argv))
   .command(
@@ -48,7 +47,7 @@ const argv = yargs(hideBin(process.argv))
         });
     },
     async (argv) => {
-      const db = new open(resolve(argv.path));
+      const db = open(resolve(argv.path));
       const subdb = db.openDB(argv.table);
       const key = argv.key ? argv.key.split(SEPARATOR) : "";
       const results = await all(subdb, key);

@@ -62,5 +62,5 @@ export async function boot(config) {
   const configCopy = { ...config };
   delete configCopy.path;
   const worker = await createWorker(configCopy);
-  return await init(worker, config.path);
+  return await init(worker, config);
 }

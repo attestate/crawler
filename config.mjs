@@ -7,6 +7,7 @@ import * as blockLogs from "@attestate/crawler-call-block-logs";
 // - Change input and output path to "name"
 // - change `args` into object from array
 // - adjust entire documentation
+// - make crawler version a peerdep of the strategy
 //
 // changes
 //
@@ -17,25 +18,30 @@ import * as blockLogs from "@attestate/crawler-call-block-logs";
 // - interval reruns a task after some milli seconds
 //
 // todos
+// - add to docs that 0x prefixed values and values stored as arrays may not
+// produce ordering in LMDB
+// - blockspan, coordinator adjust docs
+// - adjust call-block-logs docs
 // - add interval functionality to lifecycle
-// - we should create an extractor path that is of type: "ethereum" that then
-//  resolves continuously everytime latest block is hit
 
 export default {
   path: [
     {
       name: "call-block-logs",
+      coordinator: {
+        module: blockLogs.state,
+        interval: 5000,
+      },
       extractor: {
         module: blockLogs.extractor,
         args: {
           start: 16579759,
-          end: 17024582,
           address: "0x0bC2A24ce568DAd89691116d5B34DEB6C203F342",
           topics: [
             "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
             "0x0000000000000000000000000000000000000000000000000000000000000000",
           ],
-          stepSize: 1000,
+          blockspan: 1000,
         },
         output: {
           name: "call-block-logs-extraction",

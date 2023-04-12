@@ -10,10 +10,22 @@ const path = {
         // PROBLEM: The message router expects a globally unique strategy name
         $comment: "strategy names for now must be globally unique",
       },
-      interval: {
-        type: "integer",
+      coordinator: {
+        type: "object",
         $comment:
-          "The time in milliseconds after which a task is re-run automatically.",
+          "Coordinates the state of the application by e.g. re-running jobs after a period.",
+        additionalProperties: false,
+        required: ["module", "interval"],
+        properties: {
+          module: {
+            type: "object",
+          },
+          interval: {
+            type: "integer",
+            $comment:
+              "The time in milliseconds after which a task is re-run automatically.",
+          },
+        },
       },
       extractor: {
         type: "object",

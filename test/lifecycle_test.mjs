@@ -59,7 +59,7 @@ test("direct load function", async (t) => {
       },
       module: {
         order: function* () {},
-        direct: function* (line) {
+        direct: function* ({ state: { line } }) {
           const list = JSON.parse(line);
           for (let elem of list) {
             yield {
@@ -71,7 +71,8 @@ test("direct load function", async (t) => {
       },
     },
   };
-  await load(strategy.name, strategy.loader, dbMock);
+  const state = {};
+  await load(strategy.name, strategy.loader, dbMock, state);
 });
 
 test("order load function", async (t) => {
@@ -101,7 +102,7 @@ test("order load function", async (t) => {
       },
       module: {
         direct: function* () {},
-        order: function* (line) {
+        order: function* ({ state: { line } }) {
           const list = JSON.parse(line);
           for (let elem of list) {
             yield {
@@ -113,7 +114,8 @@ test("order load function", async (t) => {
       },
     },
   };
-  await load(strategy.name, strategy.loader, dbMock);
+  const state = {};
+  await load(strategy.name, strategy.loader, dbMock, state);
 });
 
 test("if function transform gracefully returns when sourceFile doesn't exist", async (t) => {
@@ -134,11 +136,10 @@ test("if function transform gracefully returns when sourceFile doesn't exist", a
 
 test("reading a file by line using the line reader", async (t) => {
   let count = 0;
-  t.plan(5);
-  const lineHandlerMock = (line, { arg1 }) => {
-    t.is(arg1, "argument1");
-    if (count === 0) t.is(line, "line0");
-    if (count === 1) t.is(line, "line1");
+  t.plan(3);
+  const lineHandlerMock = ({ state }) => {
+    if (count === 0) t.is(state.line, "line0");
+    if (count === 1) t.is(state.line, "line1");
     count++;
     return { write: "hello world", messages: [] };
   };
@@ -159,7 +160,8 @@ test("reading a file by line using the line reader", async (t) => {
     },
   };
 
-  await transform(strategy.name, strategy.transformer);
+  const state = {};
+  await transform(strategy.name, strategy.transformer, state);
   t.is(count, 2);
   try {
     await access(inDataDir(strategy.transformer.output.name), constants.R_OK);
@@ -189,9 +191,10 @@ test("if extract rejects result if it is invalid", async (t) => {
 
   const worker = new Worker();
   const router = new EventEmitter();
+  const state = {};
   await t.throwsAsync(async () => {
     try {
-      await extract(mockStrategy, worker, router);
+      await extract(mockStrategy, worker, router, state);
     } catch (e) {
       throw e;
     }
@@ -222,7 +225,10 @@ test("if extract function can handle bad results from update", async (t) => {
 
   const worker = new Worker();
   const router = new EventEmitter();
-  await t.throwsAsync(async () => await extract(mockStrategy, worker, router));
+  const state = {};
+  await t.throwsAsync(
+    async () => await extract(mockStrategy, worker, router, state)
+  );
   t.is(router.eventNames().length, 0);
 });
 
@@ -256,12 +262,14 @@ test("if extract function can handle lifecycle errors", async (t) => {
 
   const worker = new Worker();
   const router = new EventEmitter();
+  const state = {};
 
   const { code } = await extract(
     mockStrategy.name,
     mockStrategy.extractor,
     worker,
-    router
+    router,
+    state
   );
   t.is(code, EXTRACTOR_CODES.SHUTDOWN_IN_UPDATE);
   t.is(router.eventNames().length, 0);
@@ -294,8 +302,15 @@ test("if extract() resolves the promise and removes the listener on no new messa
 
   const worker = new Worker();
   const router = new EventEmitter();
+  const state = {};
 
-  await extract(mockStrategy.name, mockStrategy.extractor, worker, router);
+  await extract(
+    mockStrategy.name,
+    mockStrategy.extractor,
+    worker,
+    router,
+    state
+  );
   t.deepEqual(router.eventNames(), []);
   t.pass();
 });
@@ -327,12 +342,14 @@ test("if extract() resolves the promise and removes the listener on no message f
 
   const worker = new Worker();
   const router = new EventEmitter();
+  const state = {};
 
   const { code } = await extract(
     mockStrategy.name,
     mockStrategy.extractor,
     worker,
-    router
+    router,
+    state
   );
   t.is(code, EXTRACTOR_CODES.SHUTDOWN_IN_INIT);
   t.deepEqual(router.eventNames(), []);
@@ -366,8 +383,15 @@ test("if extract function can write to the correct output name", async (t) => {
 
   const worker = new Worker();
   const router = new EventEmitter();
+  const state = {};
 
-  await extract(mockStrategy.name, mockStrategy.extractor, worker, router);
+  await extract(
+    mockStrategy.name,
+    mockStrategy.extractor,
+    worker,
+    router,
+    state
+  );
   t.is(await fileExists(inDataDir(mockStrategy.extractor.output.name)), true);
   await unlink(inDataDir(mockStrategy.extractor.output.name));
 });
