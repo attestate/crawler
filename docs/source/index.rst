@@ -134,4 +134,5 @@ Table of Contents
 .. toctree::
   :caption: Specifications
 
+  extraction-worker
   strategy-specification
