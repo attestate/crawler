@@ -129,6 +129,7 @@ Table of Contents
 
   getting-started
   configuration
+  command-line-interface
 
 .. toctree::
   :caption: Specifications

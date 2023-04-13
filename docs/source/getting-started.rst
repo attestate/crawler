@@ -150,21 +150,9 @@ to the :ref:`environment variable reference docs
 Using the command line interface
 --------------------------------
 
-Alternatively, the crawler can be used on a UNIX-compatible command line
-interface. You can find the ``crawler.mjs`` file in the root of the source code
-directory.
-
-.. code-block:: bash
-
-  crawler.mjs [command]
-  
-  Commands:
-    crawler.mjs run [path]                  Run a crawl given a path
-    crawler.mjs range [path] [table] [key]  Query an LMDB key range in a table
-  
-  Options:
-    --help     Show help                                                 [boolean]
-    --version  Show version number                                       [boolean]
+The crawler can be used on a UNIX-compatible command line interface. You can
+find the ``crawler.mjs`` file in the root of the source code directory. For
+docs, see this page :ref:`Crawler Cli <crawler-cli>`.
 
 Configuring Your First Crawl
 ----------------------------
