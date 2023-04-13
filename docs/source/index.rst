@@ -19,45 +19,73 @@ Attestate's Crawler is created to build a web3 of peer to peer applications.
 Comparison
 ----------
 
-Compare Attestate's crawler with the Graph Protocol using the table below.
+Compare Attestate's crawler with the Graph Protocol and Ponder using the table
+below.
 
 .. list-table::
-   :widths: 25 25 50
+   :widths: 20 20 30 30
    :header-rows: 1
 
    * - Trait
      - Attestate Crawler
      - Graph Protocol
-   * - **Embeddable**
+     - Ponder
+   * - **Embeddable/Local Development**
      - ✓ (Run as your app)
      - ✘ (Runs as a network)
+     - ✓ (Local dev server with hot reloading)
    * - **Output Formats**
      - CSV, JSON, LMDB
      - GraphQL
+     - GraphQL (Postgres?)
    * - **Web2 support**
      - HTTP, JSON-RPC, GraphQL
      - Partial
+     - N/A
    * - **Free**
      - ✓
      - ✘ (tokens required)
+     - ✓
    * - **Complexity**
      - A few JS files
      - Big code base
+     - TypeScript/Node.js code base
    * - **Censorship-resistant**
      - ✓
      - `Partially <https://twitter.com/schmid_si/status/1568617843562008576>`_
+     - N/A
    * - **Customizable**
      - ✓ (Compose & implement custom strategies)
      - ✓ (Query many subgraphs)
+     - ✓ Same as graphql
    * - **License**
      - GPL-3
      - Apache 2.0/MIT
+     - MIT
    * - **Replicate data**
+     - ✓
      - ✓
      - ✓
    * - **Derive data**
      - ✓
      - Multi-graph app
+     - Multi-graph app
+   * - **Dependencies**
+     - Node.js, LMDB (optional)
+     - Docker, IPFS, PostgreSQL, Node.js
+     - Node.js, PostgreSQL (optional)
+   * - **Language/runtime**
+     - Node.js
+     - AssemblyScript/WebAssembly
+     - TypeScript/Node.js
+   * - **Package ecosystem**
+     - ✓ npm
+     - ✘ no npm
+     - ✓ npm
+   * - **Fulltext search queries**
+     - ✓ (use LMDB)
+     - ✓
+     - (planned)
 
 For a more in-depth discussion of uses cases, visit the :ref:`use cases <use-cases>` site.
 
