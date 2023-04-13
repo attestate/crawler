@@ -1,29 +1,5 @@
 import * as blockLogs from "@attestate/crawler-call-block-logs";
 
-// done:
-//
-// - re-type args to object
-// - add interval in schema
-// - Change input and output path to "name"
-// - change `args` into object from array
-// - adjust entire documentation
-// - make crawler version a peerdep of the strategy
-//
-// changes
-//
-// - 1 arguments are now to be passed in an object
-// - the output path is now passed as a single string, not as a path. it is to be
-// resolved within the program
-// - it is now "output.name" and "input.name" (from "path")
-// - interval reruns a task after some milli seconds
-//
-// todos
-// - add to docs that 0x prefixed values and values stored as arrays may not
-// produce ordering in LMDB
-// - blockspan, coordinator adjust docs
-// - adjust call-block-logs docs
-// - add interval functionality to lifecycle
-
 export default {
   path: [
     {
