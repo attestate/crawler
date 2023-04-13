@@ -1,6 +1,6 @@
 # Changelog
 
-##
+## 0.5.0
 
 - (breaking) `config.path[]` for transformer, extractor and loader, the
   properties `output.path` and `input.path` were renamed to `output.name` and
