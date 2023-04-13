@@ -121,7 +121,6 @@ Structurally, it is defined as follows:
     }
   };
 
-
 Structurally, the path property looks as follows
 
 .. code-block:: javascript
@@ -156,10 +155,10 @@ requests are stored in ``extractor.output.name`` with the pre-configured
       name: "call-block-logs",
       extractor: {
         module: {
-          // NOTE: By convention, an extractior module must always implement an
-          // init and an update function.
-          init: (arg1, arg2, ...) => { /* ... */ },
-          update: (message) => { /* ... */ },
+          // NOTE: An extractor is an ESM module that exports a function init({
+          // args, state, execute }) and a function update({ message }).
+          // init: ({ args, state, execute }) => { /* ... */ },
+          update: ({ message }) => { /* ... */ },
         },
         // NOTE: The arguments are passed into the module's init function
         args: {start: 0, end: 1},
@@ -173,7 +172,7 @@ requests are stored in ``extractor.output.name`` with the pre-configured
 
 Upon completing extraction, a transformation is scheduled to filter events by
 the EIP-20/EIP-721 transfer signature. A transformer's module consists of a
-single ``function onLine(line)`` that is invoked for each line of the
+single ``function onLine({ state })`` that is invoked for each line of the
 ``transformer.input.name``. 
 
 .. code-block:: javascript
@@ -184,8 +183,8 @@ single ``function onLine(line)`` that is invoked for each line of the
       "...": "...",
       transformer: {
         module: {
-          // NOTE: onLine gets invoked for each line in `input.path`.
-          onLine: line => { /* ... */ },
+          // NOTE: onLine gets invoked for each line in `input.name`.
+          onLine: ({ state }) => { /* console.log(state.line) */ },
         },
         args: {
           topics: [
@@ -221,7 +220,8 @@ These functions must allocate a key-value relationship between each of the data
 points:
 
 * ``direct()``'s yielded ``key`` must be globally unique (like a primary key).
-* ``order()``'s yielded ``key`` must be unique and totally, lexographically orderable.
+* ``order()``'s yielded ``key`` must be unique and totally, lexographically
+  orderable.
 
 .. code-block:: javascript
 
@@ -230,8 +230,8 @@ points:
       name: "call-block-logs",
       loader: {
         module: {
-          direct: function* (line) {
-            const log = JSON.parse(line);
+          direct: function* ({ state }) {
+            const log = JSON.parse(state.line);
             // NOTE: To access a transaction directly by its identifier, in
             // `direct` we select ``transactionHash`` as the key for the entire
             // `log`.
@@ -240,17 +240,13 @@ points:
               value: log
             }
           },
-          order: function* (line) {
-            const log = JSON.parse(line);
-            // NOTE: Since we want to get an ordered list of events, we
-            // construct a total order of transactions of their block number
-            // and their "height" within a block (`transactionIndex`).
-            // LMDB will then allow us to do a range call on these keys to
-            // instantly retrieve them orderly.
-            yield {
-              key: [log.blockNumber, log.transactionIndex],
-              value: log.transactionHash
-            }
+          order: function* ({ state }) {
+            const log = JSON.parse(state.line);
+            // NOTE: For LMDB to be able to order the keys properly it is
+            // important that they're correctly encoded and padded. To see how
+            // this may be implemented, check out the key encoding logic at
+            // https://github.com/attestate/crawler-call-block-logs/blob/main/src/loader.mjs
+            // yield...
           },
         },
         input: {
