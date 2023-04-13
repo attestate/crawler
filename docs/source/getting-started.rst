@@ -1,5 +1,16 @@
+.. _getting_started:
+
+======================
 Getting Started
-===============
+======================
+
+Attestate Crawler is a JavaScript library for retrieving on-chain storage and
+generating data derivatives. It is designed for building a web3 of peer-to-peer
+applications.
+
+For a list of features, please visit the `Features section
+<https://attestate.com/crawler/main/index.html#features>`_ on the Attestate
+Crawler website.
 
 Running an Ethereum full node
 -----------------------------
@@ -9,16 +20,93 @@ To run the crawler effectively, you'll either have to:
 * make an account with an Ethereum full node provider in the cloud
 * run a full node yourself.
 
-But to make this decision, please consider that crawling Ethereum through a
-cloud provider is considerably slower than co-locating the crawler and the
-Ethereum full node on one machine. Co-location is faster simply through mere
-proximity of the processes and the lack of having to transport over a big
-network that can produce latency and failures.
+Please consider that crawling Ethereum through a cloud provider is considerably
+slower than co-locating the crawler and the Ethereum full node on one machine.
+Co-location is faster simply through mere proximity of the processes and the
+lack of having to transport over a big network that can produce latency and
+failures.
 
 Internally, we've successfully executed the crawler over > 1TB data sets by
 running it on the same machine as a fully-sync'ed Erigon Ethereum full node.
 But for testing things and playing around, Infura or Alchemy are more than
 sufficient!
+
+Example: NameRegistered Event
+=============================
+
+To better understand Attestate Crawler's functionality, let's use the
+`NameRegistered` event from the following Solidity contract as an example:
+
+.. code-block:: solidity
+
+  contract BaseRegistrar {
+      event NameRegistered(string name, address owner);
+
+      function registerName(string calldata name, address owner) external {
+          // ...
+          emit NameRegistered(name, owner);
+      }
+  }
+
+Attestate Crawler has a package called `call-block-logs` that allows
+downloading events. Learn more about this strategy at `call-block-logs
+documentation
+<https://attestate.com/crawler-call-block-logs/main/index.html>`_. Here's a
+sample configuration file for the Attestate Crawler:
+
+.. code-block:: javascript
+
+  import * as blockLogs from "@attestate/crawler-call-block-logs";
+
+  export default {
+    path: [
+      {
+        name: "call-block-logs",
+        coordinator: { /* ... */ },
+        extractor: {
+          module: blockLogs.extractor,
+          args: {
+            start: 9380410,
+            address: "0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85",
+            topics: [ /* ... */ ],
+            blockspan: 1000,
+          },
+          output: { /* ... */ },
+        },
+        transformer: {
+          module: blockLogs.transformer,
+          args: {},
+          input: { /* ... */ },
+          output: { /* ... */ },
+        },
+        loader: { /* ... */ },
+      },
+    ],
+    queue: { /* ... */ },
+    endpoints: { /* ... */ },
+  };
+
+For the full configuration file, refer to package's `documentation
+<https://attestate.com/crawler-call-block-logs/main/usage.html>`_.
+
+The Attestate Crawler processes the `NameRegistered` event using the Extractor,
+Transformer, and Loader modules. To learn more about ETL, visit the `Extract,
+Transform, Load (ETL) guide
+<https://attestate.com/crawler/main/extract-transform-load.html>`_. Once it
+completes, the output (in the ``DATA_DIR``) could be in a format similar to the
+following example
+
+.. code-block:: json
+
+  [
+    {
+      "blockNumber": "0x123457",
+      "transactionIndex": "0x4",
+      "transactionHash": "0xddccbbaa...",
+      "...": "...",
+    }
+  ]
+
 
 Installation
 ---------------------------
@@ -83,3 +171,4 @@ Configuring Your First Crawl
 
 To run a crawl, next up, :ref:`configure the crawl path
 <configuration-crawl-path>`.
+
