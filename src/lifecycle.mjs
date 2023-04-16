@@ -211,6 +211,12 @@ export function extract(name, strategy, worker, messageRouter, state) {
 
 export async function load(name, strategy, db, state) {
   const inputPath = inDataDir(strategy.input.name);
+  if (!(await fileExists(inputPath))) {
+    log(
+      `Skipping "${name}" loading as input path doesn't exist "${inputPath}"`
+    );
+    return;
+  }
   const rl = createInterface({
     input: createReadStream(inputPath),
     crlfDelay: Infinity,
@@ -235,9 +241,9 @@ function subscribe(messageRouter, worker) {
   worker.on("message", (message) => {
     // NOTE: This is fatal and we can't continue
     if (!message.commissioner) {
-      throw new Error(
-        `Can't redirect; message.commissioner is ${message.commissioner}`
-      );
+      const message = `Can't redirect; message.commissioner is ${message.commissioner}`;
+      log(message);
+      throw new Error(message);
     } else {
       messageRouter.emit(`${message.commissioner}-extraction`, message);
     }

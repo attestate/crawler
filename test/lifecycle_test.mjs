@@ -32,6 +32,17 @@ const mockMessage = {
   },
 };
 
+test("load function without existent input file", async (t) => {
+  const name = "abc";
+  const strategy = {
+    input: {
+      name: "non-existent-file",
+    },
+  };
+  await load(name, strategy);
+  t.pass();
+});
+
 test("direct load function", async (t) => {
   let count = 0;
   t.plan(6);
