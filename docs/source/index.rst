@@ -129,6 +129,7 @@ Table of Contents
 
   getting-started
   configuration
+  javascript-usage
   command-line-interface
 
 .. toctree::
