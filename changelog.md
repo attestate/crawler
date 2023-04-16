@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.1
+
+- `function lifecycle.load()` now exits gracefully when prior transform job has
+  no processable outputs.
+
 ## 0.5.0
 
 - (breaking) `config.path[]` for transformer, extractor and loader, the
