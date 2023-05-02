@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.2
+
+- @attestate/kiwistand was crashing on a small Digital Ocean instance because
+  all MDB readers were used
+  [[issue](https://github.com/attestate/kiwistand/issues/34)]. We demonstrated
+  that it can be fixed by increasing lmdb's `maxReaders` to 500. Hence, we have
+  added a parameter to `database.open(path, maxReaders)`.
+
 ## 0.5.1
 
 - `function lifecycle.load()` now exits gracefully when prior transform job has

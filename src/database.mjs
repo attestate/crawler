@@ -10,11 +10,16 @@ export const MARKER_ORDER = "order";
 export const order = (name) => `${name}${SEPARATOR}${MARKER_ORDER}`;
 export const direct = (name) => `${name}${SEPARATOR}${MARKER_DIRECT}`;
 
-export function open(path) {
-  return new _open({
+// TODO: Ideally, at one point, we expose all lmdb-js options here
+export function open(path, maxReaders) {
+  const options = {
     path,
     keyEncoding: "ordered-binary",
-  });
+  };
+  if (maxReaders) {
+    options.maxReaders = maxReaders;
+  }
+  return new _open(options);
 }
 
 export async function toOrder(db, name, key, value) {
