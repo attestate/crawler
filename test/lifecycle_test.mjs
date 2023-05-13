@@ -1,7 +1,7 @@
 //@format
-import { constants } from "fs";
-import { access, unlink, rmdir } from "fs/promises";
-import { resolve, dirname } from "path";
+import { constants, writeFileSync, unlinkSync } from "fs";
+import { readdir, access, unlink, rmdir } from "fs/promises";
+import { join, resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import EventEmitter from "events";
 import test from "ava";
@@ -13,6 +13,7 @@ import {
   load,
   EXTRACTOR_CODES,
   prepareMessages,
+  tidy,
 } from "../src/lifecycle.mjs";
 import {
   ValidationError,
@@ -31,6 +32,64 @@ const mockMessage = {
     method: "GET",
   },
 };
+
+test.serial("tidy: non-existent file", async (t) => {
+  process.env.DATA_DIR = resolve("test/fixtures");
+  const filePath = "non-existent-file.txt";
+
+  // Assert file doesn't exist
+  t.false(await fileExists(inDataDir(filePath)));
+
+  // Call tidy with non-existent file
+  const archive = false;
+  await t.notThrowsAsync(async () => {
+    await tidy(filePath, archive);
+  });
+});
+
+test.serial("tidy: file exists and archive is false", async (t) => {
+  process.env.DATA_DIR = resolve("test/fixtures");
+  const filePath = "test-file.txt";
+  const fullFilePath = inDataDir(filePath);
+
+  // Create a test file
+  writeFileSync(fullFilePath, "Hello, world!");
+
+  const archive = false;
+  await tidy(filePath, archive);
+
+  t.false(await fileExists(fullFilePath));
+
+  try {
+    unlinkSync(fullFilePath);
+  } catch (e) {
+    // Ignore
+  }
+});
+
+test.serial("tidy: file exists and archive is true", async (t) => {
+  const filePath = "test-file.txt";
+  const fullFilePath = inDataDir(filePath);
+
+  writeFileSync(fullFilePath, "Hello, world!");
+
+  const archive = true;
+  await tidy(filePath, archive);
+
+  const files = await readdir(process.env.DATA_DIR);
+
+  const archivedFileExists = files.some((file) =>
+    file.endsWith(`_${filePath}`)
+  );
+
+  t.true(archivedFileExists);
+
+  // TODO: This seems to not always delete all files
+  if (archivedFileExists) {
+    const archivedFile = files.find((file) => file.endsWith(`_${filePath}`));
+    unlinkSync(inDataDir(archivedFile));
+  }
+});
 
 test("load function without existent input file", async (t) => {
   const name = "abc";
@@ -63,10 +122,10 @@ test("direct load function", async (t) => {
     name: "test-strategy",
     loader: {
       input: {
-        name: "../test/fixtures/file1.data",
+        name: "../fixtures/file1.data",
       },
       output: {
-        name: "../test/fixtures/file1.output",
+        name: "../fixtures/file1.output",
       },
       module: {
         order: function* () {},
@@ -106,10 +165,10 @@ test("order load function", async (t) => {
     name: "test-strategy",
     loader: {
       input: {
-        name: "../test/fixtures/file1.data",
+        name: "../fixtures/file1.data",
       },
       output: {
-        name: "../test/fixtures/file1.output",
+        name: "../fixtures/file1.output",
       },
       module: {
         direct: function* () {},
@@ -163,10 +222,10 @@ test("reading a file by line using the line reader", async (t) => {
       },
       args: { arg1: "argument1" },
       input: {
-        name: "../test/fixtures/file0.data",
+        name: "../fixtures/file0.data",
       },
       output: {
-        name: "../test/fixtures/file0.output",
+        name: "../fixtures/file0.output",
       },
     },
   };
@@ -372,7 +431,7 @@ test("if extract function can write to the correct output name", async (t) => {
     name: "a name",
     extractor: {
       output: {
-        name: "../test/fixtures/file3.output",
+        name: "../fixtures/file3.output",
       },
       args: {},
       module: {

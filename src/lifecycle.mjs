@@ -320,6 +320,21 @@ async function walk(worker, config, messageRouter) {
   }
 }
 
+export async function tidy(name, archive) {
+  const path = inDataDir(name);
+  if (!(await fileExists(path))) {
+    log(`Skipping "${path}" removal as path doesn't exist`);
+    return;
+  }
+
+  if (archive) {
+    const nextPath = (fileName) => inDataDir(`${Date.now()}_${fileName}`);
+    await rename(path, nextPath(name));
+  } else {
+    await rm(path);
+  }
+}
+
 export async function cleanup(worker, config) {
   // NOTE: Only the first path can, for now, be coordinated and repeated
   const path = config.path[0];
@@ -330,17 +345,11 @@ export async function cleanup(worker, config) {
     return;
   }
 
-  log(`Renaming extractor and transformer outputs to then repeat task`);
-  const archive = (name) => `${Date.now()}_${name}`;
-
-  await rename(
-    inDataDir(path.extractor.output.name),
-    inDataDir(archive(path.extractor.output.name))
+  log(
+    `Renaming/Deleting extractor and transformer outputs to then repeat task`
   );
-  await rename(
-    inDataDir(path.transformer.output.name),
-    inDataDir(archive(path.transformer.output.name))
-  );
+  await tidy(path.extractor.output.name);
+  await tidy(path.transformer.output.name);
 
   log(`Waiting "${path.coordinator.interval}ms" to repeat the task`);
   await new Promise((resolve) =>

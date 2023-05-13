@@ -5,6 +5,7 @@ export default {
     {
       name: "call-block-logs",
       coordinator: {
+        archive: false,
         module: blockLogs.state,
         interval: 5000,
       },

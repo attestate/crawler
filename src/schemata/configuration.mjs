@@ -17,6 +17,12 @@ const path = {
         additionalProperties: false,
         required: ["module", "interval"],
         properties: {
+          archive: {
+            type: "boolean",
+            default: false,
+            $comment:
+              "If false, then extraction and transformation files in the data dir will be deleted. Otherwise they'll be prefixed with a timestamp to be archived (default: false).",
+          },
           module: {
             type: "object",
           },

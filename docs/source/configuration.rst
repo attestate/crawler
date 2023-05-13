@@ -259,5 +259,36 @@ points:
     },
   ];
 
+Additionally, crawls can happen repeatedly. For that, the first path exposes
+a property named ``coordinator``.
+
+.. code-block:: javascript
+
+  const path = [
+    {
+      name: "call-block-logs",
+      coordinator: {
+        archive: false,
+        module: blockLogs.state,
+        interval: 5000,
+      },
+      "...": "..."
+    }
+  ];
+
+In this case, upon completing the crawl path entirely, the ``coordinator``
+waits for ``interval=5000`` milliseconds before it retriggers the entire crawl
+again. For the coordinator to work, it is additionally necessary to configure a
+``state`` module. The ``state`` module also has a particular interface that we
+must comply with. You can find an example of it in
+`@attestate/crawler-calll-block-logs
+<https://github.com/attestate/crawler-call-block-logs/blob/main/src/state.mjs>`_.
+With the ``archive`` option, we can defined whether the result files in the
+``DATA_DIR`` are deleted upon completing the task or if they're "archived". In
+case they're archived, they'll be renamed by adding a prefix of the date time
+of completion.
+
+
+
 And that's all! A full configuration of the Attestate crawler can be found on
 `GitHub <https://github.com/attestate/crawler/blob/main/config.mjs>`_.
