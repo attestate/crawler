@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.3
+
+- Add flag `path[0].coordinator.archive: Boolean` that allows to delete
+  extraction and transformation files after a single coordinator run.
+- Fix a crash that occurred in coordinator when transformation or extraction
+  files were not present (e.g. when there weren't any crawl results).
+
 ## 0.5.2
 
 - @attestate/kiwistand was crashing on a small Digital Ocean instance because
