@@ -15,6 +15,7 @@ import {
   prepareMessages,
   tidy,
 } from "../src/lifecycle.mjs";
+import * as lifecycle from "../src/lifecycle.mjs";
 import {
   ValidationError,
   NotFoundError,
@@ -32,6 +33,98 @@ const mockMessage = {
     method: "GET",
   },
 };
+
+test.serial(
+  "walk: schedules multiple strategies independent of run-time and interval delay",
+  async (t) => {
+    let strategy1Called = false;
+    let strategy2Called = false;
+    const strategy1 = {
+      name: "testStrategy1",
+      extractor: false,
+      transformer: false,
+      loader: false,
+      coordinator: new Proxy(
+        {
+          interval: 2000,
+          module: "testModule1",
+        },
+        {
+          get: function (target, prop) {
+            if (prop === "interval") {
+              strategy1Called = true;
+            }
+            return target[prop];
+          },
+        }
+      ),
+    };
+    const strategy2 = {
+      name: "testStrategy2",
+      extractor: false,
+      transformer: false,
+      loader: false,
+      coordinator: new Proxy(
+        {
+          interval: 200,
+          module: "testModule2",
+        },
+        {
+          get: function (target, prop) {
+            if (prop === "interval") {
+              strategy2Called = true;
+            }
+            return target[prop];
+          },
+        }
+      ),
+    };
+
+    const worker = {};
+    const messageRouter = {};
+
+    lifecycle.walk(worker, { path: [strategy1, strategy2] }, messageRouter);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    t.true(strategy1Called);
+    t.true(strategy2Called);
+  }
+);
+
+test.serial("run: periodically called", async (t) => {
+  const strategy = {
+    name: "testStrategy",
+    extractor: false,
+    transformer: false,
+    loader: false,
+    coordinator: {
+      interval: 100,
+      module: "testModule",
+    },
+  };
+  const worker = {};
+  const messageRouter = {};
+
+  let count = 0;
+  const reinvocation = async (
+    strategy,
+    worker,
+    messageRouter,
+    _reinvocation
+  ) => {
+    count++;
+    if (count < 5)
+      return await _reinvocation(
+        strategy,
+        worker,
+        messageRouter,
+        _reinvocation
+      );
+  };
+  await lifecycle.run(strategy, worker, messageRouter, reinvocation);
+
+  t.is(count, 5);
+});
 
 test.serial("tidy: non-existent file", async (t) => {
   process.env.DATA_DIR = resolve("test/fixtures");

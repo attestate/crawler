@@ -267,7 +267,58 @@ async function compute(db, name, module) {
   return await latest(db, name, module);
 }
 
-async function walk(worker, config, messageRouter) {
+export async function run(strategy, worker, messageRouter, reinvocation = run) {
+  let db;
+  if (strategy?.loader?.output?.name) {
+    const path = inDataDir(strategy.loader.output.name);
+    db = database.open(path);
+  }
+  const state = await compute(db, strategy.name, strategy.coordinator?.module);
+
+  if (strategy.extractor) {
+    log(
+      `Starting extractor strategy "${
+        strategy.name
+      }" with params "${JSON.stringify(strategy.extractor.args)}"`
+    );
+    await extract(
+      strategy.name,
+      strategy.extractor,
+      worker,
+      messageRouter,
+      state
+    );
+    log(`Ending extractor strategy "${strategy.name}"`);
+  }
+
+  if (strategy.transformer) {
+    log(`Starting transformer strategy "${strategy.name}"`);
+    await transform(strategy.name, strategy.transformer, state);
+    log(`Ending transformer strategy "${strategy.name}"`);
+  }
+
+  if (strategy.loader) {
+    log(`Starting loader strategy "${strategy.name}"`);
+    await load(strategy.name, strategy.loader, db, state);
+    log(`Ending loader strategy "${strategy.name}"`);
+  }
+
+  await tidy(strategy?.extractor?.output?.name, strategy?.coordinator?.archive);
+  await tidy(
+    strategy?.transformer?.output?.name,
+    strategy?.coordinator?.archive
+  );
+
+  if (strategy.coordinator?.interval) {
+    log(`Waiting "${strategy.coordinator.interval}ms" to repeat the task`);
+    await new Promise((resolve) =>
+      setTimeout(resolve, strategy.coordinator.interval)
+    );
+    return reinvocation(strategy, worker, messageRouter, reinvocation);
+  }
+}
+
+export async function walk(worker, config, messageRouter) {
   log(
     `Starting to execute strategies with the following crawl path`,
     util.inspect(config.path, {
@@ -278,49 +329,16 @@ async function walk(worker, config, messageRouter) {
     })
   );
 
-  for await (const strategy of config.path) {
-    let db;
-    if (strategy?.loader?.output?.name) {
-      const path = inDataDir(strategy.loader.output.name);
-      db = database.open(path);
-    }
-    const state = await compute(
-      db,
-      strategy.name,
-      strategy.coordinator?.module
-    );
-
-    if (strategy.extractor) {
-      log(
-        `Starting extractor strategy "${
-          strategy.name
-        }" with params "${JSON.stringify(strategy.extractor.args)}"`
-      );
-      await extract(
-        strategy.name,
-        strategy.extractor,
-        worker,
-        messageRouter,
-        state
-      );
-      log(`Ending extractor strategy "${strategy.name}"`);
-    }
-
-    if (strategy.transformer) {
-      log(`Starting transformer strategy "${strategy.name}"`);
-      await transform(strategy.name, strategy.transformer, state);
-      log(`Ending transformer strategy "${strategy.name}"`);
-    }
-
-    if (strategy.loader) {
-      log(`Starting loader strategy "${strategy.name}"`);
-      await load(strategy.name, strategy.loader, db, state);
-      log(`Ending loader strategy "${strategy.name}"`);
-    }
-  }
+  return await Promise.allSettled(
+    config.path.map((strategy) => run(strategy, worker, messageRouter))
+  );
 }
 
 export async function tidy(name, archive) {
+  if (!name) {
+    log(`tidy: Archive name "${name}" is undefined. Skipping."`);
+    return;
+  }
   const path = inDataDir(name);
   if (!(await fileExists(path))) {
     log(`Skipping "${path}" removal as path doesn't exist`);
@@ -328,41 +346,19 @@ export async function tidy(name, archive) {
   }
 
   if (archive) {
+    log(`Renaming "${name}" outputs to then repeat task`);
     const nextPath = (fileName) => inDataDir(`${Date.now()}_${fileName}`);
     await rename(path, nextPath(name));
   } else {
+    log(`Deleting "${name}" outputs to then repeat task`);
     await rm(path);
   }
-}
-
-export async function cleanup(worker, config) {
-  // NOTE: Only the first path can, for now, be coordinated and repeated
-  const path = config.path[0];
-  if (!path.coordinator?.interval) {
-    log(
-      "Coordinator's interval isn't defined, hence, returning without iteration"
-    );
-    return;
-  }
-
-  log(
-    `Renaming/Deleting extractor and transformer outputs to then repeat task`
-  );
-  await tidy(path.extractor.output.name);
-  await tidy(path.transformer.output.name);
-
-  log(`Waiting "${path.coordinator.interval}ms" to repeat the task`);
-  await new Promise((resolve) =>
-    setTimeout(resolve, path.coordinator.interval)
-  );
-  return init(worker, config);
 }
 
 export async function init(worker, config) {
   const messageRouter = new EventEmitter();
   subscribe(messageRouter, worker);
   await walk(worker, config, messageRouter);
-  await cleanup(worker, config);
 
   log("All strategies executed");
   worker.postMessage({
