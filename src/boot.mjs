@@ -49,7 +49,7 @@ export function augment(config) {
   const collected = environment.collect({ ...requiredVars, ...optionalVars });
   const configEnv = config.environment ?? {};
   const copy = { ...config };
-  copy.environment = { ...configEnv, ...collected };
+  copy.environment = { ...collected, ...configEnv };
   return copy;
 }
 
