@@ -18,35 +18,36 @@ Extractor
 * All worker messages are defined using JSON schema. To look-up a message's
   structure, visit this special folder in the crawler's `code base
   <https://github.com/attestate/crawler/tree/main/src/schemata/messages>`_.
-* An extractor is an ESM module that exports a ``function init({ args, state,
-  execute })`` and a ``function update({ message })``. Both must return an
-  object that complies to the below outlined "Lifecycle Return Message."
-* For every invocation of an extractor strategy, ``function init({ args, state,
-  execute })`` is called once upon initiation.
+* An extractor is an ESM module that exports a ``function init({ args, state, execute, environment })`` and a ``function update({ message })``. Both must
+  return an object that complies to the below outlined "Lifecycle Return
+  Message."
+* For every invocation of an extractor strategy, ``function init({ args, state, execute, environment })`` is called once upon initiation.
 * Subsequently, for every resolved message within ``messages: [...]``,
-  ``function update({ message })`` is called.
+  ``function update({ message, state, args, execute, environment })`` is called.
 * A strategy completes when either no new messages are in the worker's queue or
   when an explicit ``type: "exit"`` `message
   <https://github.com/attestate/crawler/blob/main/src/schemata/messages/exit.mjs>`_
   is sent to a worker.
 * ``config.path[].extractor.args`` is an object of values that the crawler
-  passes into an extractor's ``function init({ args, state, execute })``.
+  passes into an extractor's ``function init({ args, state, execute, environment })``.
 
 **Lifecycle Return Message**:
 
-Return values of ``function init({ args, state, execute })`` and ``function
-update({ message })`` must be a type of object that contain a ``messages:
-Array`` property and a ``write: String || null``. ``write``'s value is written
-directly into a flat file at ``config.path[].extractor.output.name`` (line by
-line). All elements in ``messages`` are forwarded to the `extraction worker
+Return values of ``function init({ args, state, execute, environment })`` and
+``function update({ args, message, state, execute, environment })`` must be a
+type of object that contain a ``messages: Array`` property and a ``write:
+String || null``. ``write``'s value is written directly into a flat file at
+``config.path[].extractor.output.name`` (line by line). All elements in
+``messages`` are forwarded to the `extraction worker
 <https://github.com/attestate/extraction-worker>`_. They are returned to
-``function update({ message })`` upon completion.
+``function update({ args, message, state, execute, environment })`` upon
+completion.
 
 An example:
 
 .. code-block:: javascript
 
-  function init({ args, state, execute }) {
+  function init({ args, state, execute, environment }) {
     return {
       // NOTE: We write hello world to a new line at `output.name`.
       write: "hello world",
@@ -67,8 +68,8 @@ An example:
           ],
           version: "0.0.1",
           options: {
-            url: "https://myfullnode.com"
-          }
+            url: environment.rpcHttpHost
+          
         }
       ]
     };
@@ -129,3 +130,7 @@ The yielded values for ``function* order()`` and ``function* direct()``
 (``key`` and ``value``) will be stored in these database sub-tables
 accordingly.
 
+Coordinator
+-----------
+
+To be documented. For usage see the attestate Kiwistand client.

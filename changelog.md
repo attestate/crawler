@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.6.0
+
+- `config.environment` (including overwritten environment variables) is now
+  passed into `extractor.{init|update}`. We stop recommend using `process.env`
+  in strategies.
+- For `coordinator.remote` the input is now an object `remote({environment, execute})`. Here, we also stop recommend using `process.env` directly.
+- Previously, although stated in the docs, defining a value in
+  `config.environment` did NOT take presedence over its `process.env`
+  counter-part. It does now.
+- Priorly, only the first path element in the configuration file could define a
+  "coordinator". We now allow all path elements to define coordinators. They're
+  executed in parallel. However, coordinators are still not documented...
+
 ## 0.5.3
 
 - Add flag `path[0].coordinator.archive: Boolean` that allows to delete
