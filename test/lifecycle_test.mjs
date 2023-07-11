@@ -110,6 +110,7 @@ test.serial("run: periodically called", async (t) => {
     strategy,
     worker,
     messageRouter,
+    config,
     _reinvocation
   ) => {
     count++;
@@ -118,10 +119,12 @@ test.serial("run: periodically called", async (t) => {
         strategy,
         worker,
         messageRouter,
+        config,
         _reinvocation
       );
   };
-  await lifecycle.run(strategy, worker, messageRouter, reinvocation);
+  const config = {};
+  await lifecycle.run(strategy, worker, messageRouter, config, reinvocation);
 
   t.is(count, 5);
 });
@@ -355,9 +358,19 @@ test("if extract rejects result if it is invalid", async (t) => {
   const worker = new Worker();
   const router = new EventEmitter();
   const state = {};
+  const config = {
+    environment: {},
+  };
   await t.throwsAsync(async () => {
     try {
-      await extract(mockStrategy, worker, router, state);
+      await extract(
+        mockStrategy.module.name,
+        mockStrategy,
+        worker,
+        router,
+        state,
+        config
+      );
     } catch (e) {
       throw e;
     }
@@ -366,6 +379,9 @@ test("if extract rejects result if it is invalid", async (t) => {
 
 test("if extract function can handle bad results from update", async (t) => {
   const mockStrategy = {
+    output: {
+      name: "output",
+    },
     module: {
       name: mockMessageCommissioner,
       init: () => {
@@ -374,6 +390,7 @@ test("if extract function can handle bad results from update", async (t) => {
           write: null,
         };
       },
+
       update: () => {
         return false;
       },
@@ -389,8 +406,19 @@ test("if extract function can handle bad results from update", async (t) => {
   const worker = new Worker();
   const router = new EventEmitter();
   const state = {};
+  const config = {
+    environment: {},
+  };
   await t.throwsAsync(
-    async () => await extract(mockStrategy, worker, router, state)
+    async () =>
+      await extract(
+        mockStrategy.module.name,
+        mockStrategy,
+        worker,
+        router,
+        state,
+        config
+      )
   );
   t.is(router.eventNames().length, 0);
 });
@@ -427,12 +455,16 @@ test("if extract function can handle lifecycle errors", async (t) => {
   const router = new EventEmitter();
   const state = {};
 
+  const config = {
+    environment: {},
+  };
   const { code } = await extract(
     mockStrategy.name,
     mockStrategy.extractor,
     worker,
     router,
-    state
+    state,
+    config
   );
   t.is(code, EXTRACTOR_CODES.SHUTDOWN_IN_UPDATE);
   t.is(router.eventNames().length, 0);
@@ -467,12 +499,16 @@ test("if extract() resolves the promise and removes the listener on no new messa
   const router = new EventEmitter();
   const state = {};
 
+  const config = {
+    environment: {},
+  };
   await extract(
     mockStrategy.name,
     mockStrategy.extractor,
     worker,
     router,
-    state
+    state,
+    config
   );
   t.deepEqual(router.eventNames(), []);
   t.pass();
@@ -506,13 +542,17 @@ test("if extract() resolves the promise and removes the listener on no message f
   const worker = new Worker();
   const router = new EventEmitter();
   const state = {};
+  const config = {
+    environment: {},
+  };
 
   const { code } = await extract(
     mockStrategy.name,
     mockStrategy.extractor,
     worker,
     router,
-    state
+    state,
+    config
   );
   t.is(code, EXTRACTOR_CODES.SHUTDOWN_IN_INIT);
   t.deepEqual(router.eventNames(), []);
@@ -547,13 +587,17 @@ test("if extract function can write to the correct output name", async (t) => {
   const worker = new Worker();
   const router = new EventEmitter();
   const state = {};
+  const config = {
+    environment: {},
+  };
 
   await extract(
     mockStrategy.name,
     mockStrategy.extractor,
     worker,
     router,
-    state
+    state,
+    config
   );
   t.is(await fileExists(inDataDir(mockStrategy.extractor.output.name)), true);
   await unlink(inDataDir(mockStrategy.extractor.output.name));

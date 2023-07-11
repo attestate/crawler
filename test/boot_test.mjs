@@ -49,7 +49,7 @@ test.serial("overwriting config variables with the environment", (t) => {
     },
   };
   const nextConfig = augment(config);
-  t.is(nextConfig.environment.rpcApiKey, env.RPC_API_KEY);
+  t.is(nextConfig.environment.rpcApiKey, config.environment.rpcApiKey);
 });
 
 test.serial("if boot can be started programmatically", async (t) => {

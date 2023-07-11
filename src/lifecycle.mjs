@@ -88,123 +88,149 @@ export async function transform(name, strategy, state) {
   return buffer;
 }
 
-export function extract(name, strategy, worker, messageRouter, state) {
-  return new Promise(async (resolve, reject) => {
-    let numberOfMessages = 0;
-    const type = "extraction";
-    const interval = setInterval(() => {
-      log(
-        `${name} extractor is running with ${numberOfMessages} messages pending`
-      );
-    }, 120_000);
-
-    let result;
-    const props = { args: strategy.args, state, execute };
+export async function extract(
+  name,
+  strategy,
+  worker,
+  messageRouter,
+  state,
+  config
+) {
+  return await new Promise(async (resolve, reject) => {
+    // NOTE: This promise function swallows errors so as a work-around, we've
+    // added a huge try-catch
     try {
-      result = await strategy.module.init(props);
-    } catch (err) {
-      reject(err);
-    }
-    if (!result) {
-      const error = new Error(
-        `Strategy "${name}-extraction" didn't return a valid result: "${JSON.stringify(
-          result
-        )}"`
-      );
-      error.code = EXTRACTOR_CODES.FAILURE;
-      clearInterval(interval);
-      return reject(error);
-    }
+      let numberOfMessages = 0;
+      const type = "extraction";
+      const interval = setInterval(() => {
+        log(
+          `${name} extractor is running with ${numberOfMessages} messages pending`
+        );
+      }, 120_000);
 
-    const outputPath = inDataDir(strategy.output.name);
-    if (result.write) {
+      let result;
+      const props = {
+        args: strategy.args,
+        state,
+        execute,
+        environment: config.environment,
+      };
       try {
-        appendFileSync(outputPath, `${result.write}\n`);
+        result = await strategy.module.init(props);
       } catch (err) {
+        reject(err);
+      }
+      if (!result) {
         const error = new Error(
-          `Couldn't write to file after update. Output path: "${outputPath}", Content: "${result.write}"`
+          `Strategy "${name}-extraction" didn't return a valid result: "${JSON.stringify(
+            result
+          )}"`
         );
         error.code = EXTRACTOR_CODES.FAILURE;
         clearInterval(interval);
         return reject(error);
       }
-    }
 
-    const callback = async (message) => {
-      numberOfMessages--;
-      log(`Leftover Lifecycle Messages: ${numberOfMessages}`);
-
-      if (message.error) {
-        log(
-          `Received error message from worker for strategy "${name}": "${message.error}"`
-        );
-      } else {
-        let result;
-        const props = { args: strategy.args, state, message, execute };
+      const outputPath = inDataDir(strategy.output.name);
+      if (result.write) {
         try {
-          result = await strategy.module.update(props);
+          appendFileSync(outputPath, `${result.write}\n`);
         } catch (err) {
-          reject(err);
-        }
-        if (!result) {
           const error = new Error(
-            `Strategy "${name}-extraction" didn't return a valid result: "${JSON.stringify(
-              result
-            )}"`
+            `Couldn't write to file after update. Output path: "${outputPath}", Content: "${result.write}"`
           );
           error.code = EXTRACTOR_CODES.FAILURE;
-          messageRouter.off(`${name}-${type}`, callback);
           clearInterval(interval);
           return reject(error);
         }
+      }
 
-        if (result.messages?.length !== 0) {
-          prepareMessages(result.messages, name).forEach((message) => {
-            numberOfMessages++;
-            worker.postMessage(message);
-          });
-        }
+      const callback = async (message) => {
+        numberOfMessages--;
+        log(`Leftover Lifecycle Messages: ${numberOfMessages}`);
 
-        if (result.write) {
+        if (message.error) {
+          log(
+            `Received error message from worker for strategy "${name}": "${message.error}"`
+          );
+        } else {
+          let result;
+          const props = {
+            args: strategy.args,
+            state,
+            message,
+            execute,
+            environment: config.environment,
+          };
           try {
-            appendFileSync(outputPath, `${result.write}\n`);
+            result = await strategy.module.update(props);
           } catch (err) {
+            reject(err);
+          }
+          if (!result) {
             const error = new Error(
-              `Couldn't write to file after update. Output Path: "${outputPath}", Content: "${result.write}"`
+              `Strategy "${name}-extraction" didn't return a valid result: "${JSON.stringify(
+                result
+              )}"`
             );
             error.code = EXTRACTOR_CODES.FAILURE;
             messageRouter.off(`${name}-${type}`, callback);
             clearInterval(interval);
             return reject(error);
           }
-        }
-      }
 
-      if (numberOfMessages === 0) {
-        log("Shutting down extraction in update callback function");
+          if (result.messages?.length !== 0) {
+            prepareMessages(result.messages, name).forEach((message) => {
+              numberOfMessages++;
+              worker.postMessage(message);
+            });
+          }
+
+          if (result.write) {
+            try {
+              appendFileSync(outputPath, `${result.write}\n`);
+            } catch (err) {
+              const error = new Error(
+                `Couldn't write to file after update. Output Path: "${outputPath}", Content: "${result.write}"`
+              );
+              error.code = EXTRACTOR_CODES.FAILURE;
+              messageRouter.off(`${name}-${type}`, callback);
+              clearInterval(interval);
+              return reject(error);
+            }
+          }
+        }
+
+        if (numberOfMessages === 0) {
+          log("Shutting down extraction in update callback function");
+          messageRouter.off(`${name}-${type}`, callback);
+          clearInterval(interval);
+          resolve({ code: EXTRACTOR_CODES.SHUTDOWN_IN_UPDATE });
+        }
+      };
+
+      messageRouter.on(`${name}-${type}`, callback);
+
+      let preparedMessages =
+        result.messages?.length !== 0
+          ? prepareMessages(result.messages, name)
+          : 0;
+
+      if (preparedMessages.length > 0) {
+        preparedMessages.forEach((message) => {
+          numberOfMessages++;
+          worker.postMessage(message);
+        });
+      } else {
+        log("Shutting down extraction in init follow-up function");
         messageRouter.off(`${name}-${type}`, callback);
         clearInterval(interval);
-        resolve({ code: EXTRACTOR_CODES.SHUTDOWN_IN_UPDATE });
+        resolve({ code: EXTRACTOR_CODES.SHUTDOWN_IN_INIT });
       }
-    };
-
-    messageRouter.on(`${name}-${type}`, callback);
-
-    let preparedMessages =
-      result.messages?.length !== 0
-        ? prepareMessages(result.messages, name)
-        : 0;
-
-    if (preparedMessages.length > 0) {
-      preparedMessages.forEach((message) => {
-        numberOfMessages++;
-        worker.postMessage(message);
-      });
-    } else {
-      log("Shutting down extraction in init follow-up function");
-      messageRouter.off(`${name}-${type}`, callback);
-      clearInterval(interval);
-      resolve({ code: EXTRACTOR_CODES.SHUTDOWN_IN_INIT });
+    } catch (err) {
+      const message = `Err in extract promise: ${err.toString()} ${err.stack}`;
+      log(message);
+      reject(err);
     }
   });
 }
@@ -250,30 +276,44 @@ function subscribe(messageRouter, worker) {
   });
 }
 
-export async function latest(db, name, module) {
+export async function latest(db, name, config, module) {
   const subdb = db.openDB(database.order(name));
   const local = await module.local(subdb);
-  const remote = await module.remote(execute);
+  const remote = await module.remote({
+    environment: config.environment,
+    execute,
+  });
   return {
     local,
     remote,
   };
 }
 
-async function compute(db, name, module) {
+async function compute(db, name, config, module) {
   if (!db || (!module && (!module.local || !module.remote))) {
     return {};
   }
-  return await latest(db, name, module);
+  return await latest(db, name, config, module);
 }
 
-export async function run(strategy, worker, messageRouter, reinvocation = run) {
+export async function run(
+  strategy,
+  worker,
+  messageRouter,
+  config,
+  reinvocation = run
+) {
   let db;
   if (strategy?.loader?.output?.name) {
     const path = inDataDir(strategy.loader.output.name);
     db = database.open(path);
   }
-  const state = await compute(db, strategy.name, strategy.coordinator?.module);
+  const state = await compute(
+    db,
+    strategy.name,
+    config,
+    strategy.coordinator?.module
+  );
 
   if (strategy.extractor) {
     log(
@@ -286,7 +326,8 @@ export async function run(strategy, worker, messageRouter, reinvocation = run) {
       strategy.extractor,
       worker,
       messageRouter,
-      state
+      state,
+      config
     );
     log(`Ending extractor strategy "${strategy.name}"`);
   }
@@ -314,7 +355,7 @@ export async function run(strategy, worker, messageRouter, reinvocation = run) {
     await new Promise((resolve) =>
       setTimeout(resolve, strategy.coordinator.interval)
     );
-    return reinvocation(strategy, worker, messageRouter, reinvocation);
+    return reinvocation(strategy, worker, messageRouter, config, reinvocation);
   }
 }
 
@@ -330,7 +371,7 @@ export async function walk(worker, config, messageRouter) {
   );
 
   return await Promise.allSettled(
-    config.path.map((strategy) => run(strategy, worker, messageRouter))
+    config.path.map((strategy) => run(strategy, worker, messageRouter, config))
   );
 }
 
