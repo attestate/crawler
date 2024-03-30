@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.1
+
+- Update extraction-worker and eth-fun to new minor versions which allow
+  getting a transaction by hash.
+
 ## 0.6.0
 
 - `config.environment` (including overwritten environment variables) is now
