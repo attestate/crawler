@@ -72,11 +72,8 @@ export async function transform(name, strategy, state) {
       appendFileSync(outputPath, `${write}\n`);
     }
   });
-  // TODO: Figure out how `onError` shall be handled.
-  // NOTE: Actually, new strategies don't even implement this anymore.
   rl.on("error", (error) => {
-    const props = { args: strategy.args, state, error, execute };
-    const write = strategy.module.onError(props);
+    log(`Error from rl in transform: ${error.stack}`);
   });
 
   await once(rl, "close");
