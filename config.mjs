@@ -43,6 +43,7 @@ export default {
           name: "call-block-logs-load",
         },
       },
+      end: () => console.log("crawl ended"),
     },
   ],
   queue: {

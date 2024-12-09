@@ -347,6 +347,11 @@ export async function run(
     strategy?.coordinator?.archive
   );
 
+  if (strategy?.end && typeof strategy.end === "function") {
+    log(`Ending crawl iteration by calling end function`);
+    await strategy.end();
+  }
+
   if (strategy.coordinator?.interval) {
     log(`Waiting "${strategy.coordinator.interval}ms" to repeat the task`);
     await new Promise((resolve) =>
