@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.2
+
+- Add `end` parameter as a new stage to crawl path. It calls an async function
+  that can be used to clean up after crawling or trigger some processes needed
+  to refresh data in the application.
+
 ## 0.6.1
 
 - Update extraction-worker and eth-fun to new minor versions which allow
