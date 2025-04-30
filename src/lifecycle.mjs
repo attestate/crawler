@@ -260,17 +260,25 @@ export async function load(name, strategy, db, state) {
   }
 }
 
+// Modified subscribe to return the listener function
 function subscribe(messageRouter, worker) {
-  worker.on("message", (message) => {
+  // Define the listener function
+  const messageListener = (message) => {
     // NOTE: This is fatal and we can't continue
     if (!message.commissioner) {
-      const message = `Can't redirect; message.commissioner is ${message.commissioner}`;
-      log(message);
-      throw new Error(message);
+      const errorMessage = `Can't redirect; message.commissioner is ${message.commissioner}`;
+      log(errorMessage);
+      throw new Error(errorMessage);
     } else {
       messageRouter.emit(`${message.commissioner}-extraction`, message);
     }
-  });
+  };
+
+  // Attach the listener
+  worker.on("message", messageListener);
+
+  // Return the listener so it can be removed later
+  return messageListener;
 }
 
 export async function latest(db, name, config, module) {
@@ -398,14 +406,23 @@ export async function tidy(name, archive) {
   }
 }
 
+// Modified init to capture and remove the listener
 export async function init(worker, config) {
   const messageRouter = new EventEmitter();
-  subscribe(messageRouter, worker);
-  await walk(worker, config, messageRouter);
+  // Capture the listener function returned by subscribe
+  const workerListener = subscribe(messageRouter, worker);
 
-  log("All strategies executed");
-  worker.postMessage({
-    type: "exit",
-    version: "0.0.1",
-  });
+  try {
+    await walk(worker, config, messageRouter);
+
+    log("All strategies executed");
+    worker.postMessage({
+      type: "exit",
+      version: "0.0.1",
+    });
+  } finally {
+    // Ensure cleanup happens even if walk throws an error
+    log("Removing worker message listener");
+    worker.off("message", workerListener);
+  }
 }

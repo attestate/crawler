@@ -4,3 +4,4 @@ node_modules
 data
 docs/.venv
 docs/build
+.aider*
