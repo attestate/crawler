@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.3
+
+- Fix potential memory leak by ensuring the worker message listener is properly removed after crawler tasks complete. This improves stability when running the crawler programmatically multiple times within the same process.
+
 ## 0.6.2
 
 - Add `end` parameter as a new stage to crawl path. It calls an async function
