@@ -71,7 +71,7 @@ test.serial("if boot can be started programmatically", async (t) => {
                   params: [],
                   version: "0.0.1",
                   options: {
-                    url: env.RPC_HTTP_HOST,
+                    url: "https://eth.llamarpc.com",
                   },
                 },
               ],
