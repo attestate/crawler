@@ -5,3 +5,4 @@ data
 docs/.venv
 docs/build
 .aider*
+.claude
