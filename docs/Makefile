@@ -4,11 +4,11 @@ deploy:
 
 .PHONY: html
 html:
-	sphinx-multiversion source build/html
+	. venv/bin/activate && sphinx-multiversion source build/html
 
 .PHONY: build
 build:
-	sphinx-build -b html source build
+	. venv/bin/activate && sphinx-build -b html source build
 
 .PHONY: serve
 serve:
