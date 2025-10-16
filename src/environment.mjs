@@ -14,6 +14,7 @@ export const requiredVars = {
 
 export const optionalVars = {
   RPC_API_KEY: "rpcApiKey",
+  RPC_WS_HOST: "rpcWsHost",
   IPFS_HTTPS_GATEWAY_KEY: "ipfsHttpsGatewayKey",
 };
 

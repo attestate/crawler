@@ -13,9 +13,9 @@ const path = {
       coordinator: {
         type: "object",
         $comment:
-          "Coordinates the state of the application by e.g. re-running jobs after a period.",
+          "Coordinates the state of the application by subscribing to new blocks via WebSocket.",
         additionalProperties: false,
-        required: ["module", "interval"],
+        required: ["module"],
         properties: {
           archive: {
             type: "boolean",
@@ -25,11 +25,6 @@ const path = {
           },
           module: {
             type: "object",
-          },
-          interval: {
-            type: "integer",
-            $comment:
-              "The time in milliseconds after which a task is re-run automatically.",
           },
         },
       },
@@ -142,6 +137,11 @@ const environment = {
       type: "string",
       format: "uri",
       pattern: "^https?://",
+    },
+    rpcWsHost: {
+      type: "string",
+      format: "uri",
+      pattern: "^wss?://",
     },
     rpcApiKey: {
       type: "string",

@@ -38,7 +38,8 @@ available through ``process.env``.
 The environment variables with an asterisk \* are **required** for
 ``@attestate/crawler`` to run:
 
-* ``RPC_HTTP_HOST``\* describes the host that Ethereum JSON-RPC extraction request are made against. It must be set to an URL to an Ethereum full node's JSON-RPC endpoint that starts with ``https://``. ``ws://`` or ``wss://`` prefixes are currently not supported. We support URLs that include the API's bearer token as is the case with, e.g., Infura or Alchemy.
+* ``RPC_HTTP_HOST``\* describes the host that Ethereum JSON-RPC extraction request are made against. It must be set to an URL to an Ethereum full node's JSON-RPC endpoint that starts with ``https://``. We support URLs that include the API's bearer token as is the case with, e.g., Infura or Alchemy.
+* ``RPC_WS_HOST``\* describes the WebSocket endpoint for real-time block monitoring when using a coordinator with the ``watch()`` function. It must be set to a WebSocket URL starting with ``wss://`` (e.g., ``wss://opt-mainnet.g.alchemy.com/v2/YOUR_API_KEY``). This is required for strategies that use WebSocket subscriptions for continuous operation.
 * ``RPC_API_KEY`` is the API key for the host extraction requests are made against. It must be set if an Ethereum full node was provisioned behind an HTTP proxy that requires a bearer token authorization via the HTTP ``Authorization`` header. In this case, the header is structurally set as follows: ``Authorization: Bearer ${RPC_API_KEY}``.
 * ``DATA_DIR``\* is the directory that stores all results from extraction and transformation of the crawler. It must be set to a file system path (relative or absolute).
 * ``IPFS_HTTPS_GATEWAY``\* describes the host that IPFS extraction requests are made against. A list of publicly accessible IPFS gateways can be found `here <https://ipfs.github.io/public-gateway-checker/>`_.
@@ -259,8 +260,8 @@ points:
     },
   ];
 
-Additionally, crawls can happen repeatedly. For that, the first path exposes
-a property named ``coordinator``.
+Additionally, crawls can happen continuously using real-time block monitoring.
+For that, the first path exposes a property named ``coordinator``.
 
 .. code-block:: javascript
 
@@ -270,23 +271,30 @@ a property named ``coordinator``.
       coordinator: {
         archive: false,
         module: blockLogs.state,
-        interval: 5000,
       },
       "...": "..."
     }
   ];
 
-In this case, upon completing the crawl path entirely, the ``coordinator``
-waits for ``interval=5000`` milliseconds before it retriggers the entire crawl
-again. For the coordinator to work, it is additionally necessary to configure a
-``state`` module. The ``state`` module also has a particular interface that we
-must comply with. You can find an example of it in
-`@attestate/crawler-calll-block-logs
+The coordinator uses WebSocket subscriptions for real-time block monitoring,
+which provides ~1-2 second latency for new blocks compared to polling-based
+approaches. For the coordinator to work, the ``module`` must export a
+``watch()`` function that subscribes to new block headers via WebSocket (e.g.,
+from Alchemy or Infura). The ``watch()`` function automatically handles
+reconnection and missed block detection. You can find an example
+implementation in `@attestate/crawler-call-block-logs
 <https://github.com/attestate/crawler-call-block-logs/blob/main/src/state.mjs>`_.
-With the ``archive`` option, we can defined whether the result files in the
+
+With the ``archive`` option, we can define whether the result files in the
 ``DATA_DIR`` are deleted upon completing the task or if they're "archived". In
 case they're archived, they'll be renamed by adding a prefix of the date time
 of completion.
+
+.. note::
+   Prior to version 0.7.0, the coordinator used a polling-based ``interval``
+   parameter (e.g., ``interval: 5000`` to poll every 5 seconds). This has been
+   replaced with WebSocket subscriptions for better performance and resource
+   efficiency.
 
 
 

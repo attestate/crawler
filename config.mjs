@@ -1,46 +1,69 @@
+// @format
+import { env } from "process";
+
 import * as blockLogs from "@attestate/crawler-call-block-logs";
 
 export default {
+  environment: {
+    rpcHttpHost: env.RPC_HTTP_HOST || env.OPTIMISM_RPC_HTTP_HOST,
+    rpcApiKey: env.RPC_API_KEY || "",
+    rpcWsHost: env.RPC_WS_HOST,
+    ipfsHttpsGateway: env.IPFS_HTTPS_GATEWAY || "https://",
+    arweaveHttpsGateway: env.ARWEAVE_HTTPS_GATEWAY || "https://",
+  },
   path: [
     {
-      name: "call-block-logs",
+      name: "list-delegations-2",
       coordinator: {
         archive: false,
         module: blockLogs.state,
-        interval: 5000,
       },
       extractor: {
         module: blockLogs.extractor,
         args: {
-          start: 16579759,
-          address: "0x0bC2A24ce568DAd89691116d5B34DEB6C203F342",
+          start: 140309527, // Delegator3 deployment block
+          address: "0x418910fef46896eb0bfe38f656e2f7df3eca7198", // Delegator3 address
           topics: [
-            "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            // keccak256("Delegate(bytes32[3],address)") ===
+            "0xcd9cc59d1cc3aa17955023d009176720c8a383000a973ae2933c1cf6cbeee480",
           ],
-          blockspan: 1000,
+          blockspan: 5000,
+          includeTimestamp: false,
         },
         output: {
-          name: "call-block-logs-extraction",
+          name: "list-delegations-extraction-2",
         },
       },
       transformer: {
         module: blockLogs.transformer,
-        args: {},
+        args: {
+          inputs: [
+            {
+              type: "bytes32[3]",
+              name: "data",
+              indexed: false,
+            },
+            {
+              type: "address",
+              name: "sender",
+              indexed: false,
+            },
+          ],
+        },
         input: {
-          name: "call-block-logs-extraction",
+          name: "list-delegations-extraction-2",
         },
         output: {
-          name: "call-block-logs-transformation",
+          name: "list-delegations-transformation-2",
         },
       },
       loader: {
         module: blockLogs.loader,
         input: {
-          name: "call-block-logs-transformation",
+          name: "list-delegations-transformation-2",
         },
         output: {
-          name: "call-block-logs-load",
+          name: "list-delegations-load-2",
         },
       },
       end: () => console.log("crawl ended"),
@@ -48,18 +71,13 @@ export default {
   ],
   queue: {
     options: {
-      concurrent: 100,
+      concurrent: 10,
     },
   },
   endpoints: {
-    //[env.RPC_HTTP_HOST]: {
-    //  timeout: 10_000,
-    //  requestsPerUnit: 25,
-    //  unit: "second",
-    //},
-    "https://ipfs.io": {
-      timeout: 6000,
-      requestsPerUnit: 50,
+    [env.RPC_HTTP_HOST || env.OPTIMISM_RPC_HTTP_HOST]: {
+      timeout: 10_000,
+      requestsPerUnit: 15,
       unit: "second",
     },
   },

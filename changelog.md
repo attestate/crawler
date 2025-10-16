@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.7.0
+
+- **(breaking)** Remove polling-based coordinator `interval` in favor of WebSocket subscriptions
+- **(breaking)** Coordinator now requires `module.watch()` function for continuous operation
+- **(breaking)** Add required `RPC_WS_HOST` environment variable for WebSocket endpoint
+- Add WebSocket support for real-time block monitoring via coordinator `watch()` function
+- WebSocket subscriptions provide real-time block notifications (~1-2s latency) vs polling delays
+- Improved resource efficiency: single persistent connection vs repeated HTTP polling
+- Add `skipWatch` parameter to `run()` function to prevent nested watch subscriptions
+- Add loading progress logging (every 100 lines processed)
+- Fix graceful shutdown with proper SIGINT/SIGTERM handling for WebSocket cleanup
+- Compatible with `@attestate/crawler-call-block-logs@0.6.0` which exports the `watch()` function
+
 ## 0.6.4
 
 - Support node 20

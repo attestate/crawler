@@ -245,8 +245,14 @@ export async function load(name, strategy, db, state) {
     crlfDelay: Infinity,
   });
 
+  let lineCount = 0;
   for await (const line of rl) {
     if (line === "") continue;
+
+    lineCount++;
+    if (lineCount % 100 === 0) {
+      log(`Loading progress: processed ${lineCount} lines`);
+    }
 
     const stateCopy = { ...state, line };
     const props = { args: strategy.args, state: stateCopy, execute };
@@ -258,6 +264,7 @@ export async function load(name, strategy, db, state) {
       await database.toDirect(db, name, key, value);
     }
   }
+  log(`Loading completed: processed ${lineCount} total lines`);
 }
 
 // Modified subscribe to return the listener function
@@ -306,19 +313,34 @@ export async function run(
   worker,
   messageRouter,
   config,
-  reinvocation = run
+  reinvocation = run,
+  remoteBlockNumber = null,
+  skipWatch = false
 ) {
   let db;
   if (strategy?.loader?.output?.name) {
     const path = inDataDir(strategy.loader.output.name);
     db = database.open(path);
   }
-  const state = await compute(
-    db,
-    strategy.name,
-    config,
-    strategy.coordinator?.module
-  );
+
+  // If we have a block number from WebSocket, use it instead of calling eth_blockNumber
+  let state;
+  if (remoteBlockNumber !== null && strategy.coordinator) {
+    const subdb = db.openDB(database.order(strategy.name));
+    const local = await strategy.coordinator.module.local(subdb);
+    state = {
+      local,
+      remote: Number(remoteBlockNumber),
+    };
+    log(`Using WebSocket block number: ${remoteBlockNumber} (local: ${local})`);
+  } else {
+    state = await compute(
+      db,
+      strategy.name,
+      config,
+      strategy.coordinator?.module
+    );
+  }
 
   if (strategy.extractor) {
     log(
@@ -360,12 +382,54 @@ export async function run(
     await strategy.end();
   }
 
-  if (strategy.coordinator?.interval) {
-    log(`Waiting "${strategy.coordinator.interval}ms" to repeat the task`);
-    await new Promise((resolve) =>
-      setTimeout(resolve, strategy.coordinator.interval)
-    );
-    return reinvocation(strategy, worker, messageRouter, config, reinvocation);
+  // Only set up watch on the initial run, not on subsequent block triggers
+  if (strategy.coordinator?.module?.watch && !skipWatch) {
+    log(`Setting up coordinator watch subscription`);
+
+    const unwatch = strategy.coordinator.module.watch({
+      environment: config.environment,
+      onNewBlock: async (blockNumber) => {
+        log(`Coordinator triggered with new block: ${blockNumber}`);
+        try {
+          // Pass skipWatch=true to prevent nested watch subscriptions
+          await reinvocation(
+            strategy,
+            worker,
+            messageRouter,
+            config,
+            reinvocation,
+            blockNumber,
+            true
+          );
+        } catch (err) {
+          log(
+            `Error processing coordinator trigger ${blockNumber}: ${err.message}`
+          );
+        }
+      },
+    });
+
+    log(`Coordinator watch active, waiting for triggers...`);
+
+    // Return a promise that never resolves to keep the process alive
+    // The WebSocket subscription will keep triggering onNewBlock
+    return new Promise((resolve) => {
+      // Single handler for cleanup
+      const cleanup = () => {
+        log("Received SIGINT, cleaning up watch subscription");
+        unwatch();
+        worker.postMessage({
+          type: "exit",
+          version: "0.0.1",
+        });
+        resolve();
+        process.exit(0);
+      };
+
+      // Register cleanup handlers once
+      process.once("SIGINT", cleanup);
+      process.once("SIGTERM", cleanup);
+    });
   }
 }
 
