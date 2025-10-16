@@ -326,13 +326,13 @@ export async function run(
   // If we have a block number from WebSocket, use it instead of calling eth_blockNumber
   let state;
   if (remoteBlockNumber !== null && strategy.coordinator) {
-    const subdb = db.openDB(database.order(strategy.name));
-    const local = await strategy.coordinator.module.local(subdb);
+    // When triggered by WebSocket, scan only the new block, not from last DB entry
+    const blockNum = Number(remoteBlockNumber);
     state = {
-      local,
-      remote: Number(remoteBlockNumber),
+      local: blockNum - 1, // Start from previous block
+      remote: blockNum, // End at current block
     };
-    log(`Using WebSocket block number: ${remoteBlockNumber} (local: ${local})`);
+    log(`WebSocket trigger: scanning block ${blockNum}`);
   } else {
     state = await compute(
       db,
