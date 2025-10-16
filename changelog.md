@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.1
+
+- Hardcode block distance in watch operation (fix)
+
 ## 0.7.0
 
 - **(breaking)** Remove polling-based coordinator `interval` in favor of WebSocket subscriptions
