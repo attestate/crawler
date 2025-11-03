@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.2
+
+- Fix WebSocket gap handling to prevent missed blocks during API outages or reconnections
+- Add memory-based tracking of last scanned block to avoid rescanning old blocks when no events occur
+- On first WebSocket trigger after startup, backfill from last DB state to current block
+- On subsequent triggers, use in-memory lastScannedBlock to efficiently process only new blocks
+- Improved logging to show when using memory vs DB state for block scanning
+
 ## 0.7.1
 
 - Hardcode block distance in watch operation (fix)
