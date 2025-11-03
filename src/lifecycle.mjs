@@ -22,6 +22,8 @@ export const EXTRACTOR_CODES = {
 };
 
 const log = logger("lifecycle");
+
+let lastScannedBlock = null;
 const ajv = new Ajv();
 addFormats(ajv);
 
@@ -328,11 +330,27 @@ export async function run(
   if (remoteBlockNumber !== null && strategy.coordinator) {
     // When triggered by WebSocket, scan only the new block, not from last DB entry
     const blockNum = Number(remoteBlockNumber);
+
+    let localBlock;
+    if (lastScannedBlock !== null) {
+      localBlock = lastScannedBlock;
+      log(`Using lastScannedBlock from memory: ${lastScannedBlock}`);
+    } else {
+      const dbState = await latest(
+        db,
+        strategy.name,
+        config,
+        strategy.coordinator.module
+      );
+      localBlock = dbState.local;
+      log(`First trigger - using DB state: ${localBlock}`);
+    }
+
     state = {
-      local: blockNum - 1, // Start from previous block
-      remote: blockNum, // End at current block
+      local: localBlock,
+      remote: blockNum,
     };
-    log(`WebSocket trigger: scanning block ${blockNum}`);
+    log(`WebSocket trigger: scanning from ${state.local} to ${state.remote}`);
   } else {
     state = await compute(
       db,
@@ -401,6 +419,8 @@ export async function run(
             blockNumber,
             true
           );
+          lastScannedBlock = Number(blockNumber);
+          log(`Updated lastScannedBlock to: ${lastScannedBlock}`);
         } catch (err) {
           log(
             `Error processing coordinator trigger ${blockNumber}: ${err.message}`
