@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.4
+
+- Update to eth-fun@0.10.2 for Node.js 22 support
+
 ## 0.7.3
 
 - Fix initial sync to properly fall back to config `args.start` block when database is empty
