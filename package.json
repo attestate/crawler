@@ -1,6 +1,6 @@
 {
   "name": "@attestate/crawler",
-  "version": "0.7.3",
+  "version": "0.7.4",
   "description": "@attestate/crawler is a tool chain to retrieve on-chain data from Ethereum.",
   "main": "./src/boot.mjs",
   "bin": {
