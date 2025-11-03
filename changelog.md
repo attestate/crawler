@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.3
+
+- Fix initial sync to properly fall back to config `args.start` block when database is empty
+- Previously, when `state.local` was 0 (empty database), the crawler would attempt to sync from block 0 instead of using the configured start block
+- Now implements proper fallback chain: lastScannedBlock → dbState.local → args.start
+- This fix ensures first-time syncs start from the correct deployment block instead of genesis
+
 ## 0.7.2
 
 - Fix WebSocket gap handling to prevent missed blocks during API outages or reconnections

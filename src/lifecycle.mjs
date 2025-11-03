@@ -343,7 +343,14 @@ export async function run(
         strategy.coordinator.module
       );
       localBlock = dbState.local;
-      log(`First trigger - using DB state: ${localBlock}`);
+
+      // Fall back to config start block if DB state is 0 or invalid
+      if (localBlock === 0 && strategy.extractor?.args?.start) {
+        localBlock = strategy.extractor.args.start;
+        log(`DB state is 0, falling back to config start block: ${localBlock}`);
+      } else {
+        log(`First trigger - using DB state: ${localBlock}`);
+      }
     }
 
     state = {
