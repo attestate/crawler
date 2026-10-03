@@ -123,6 +123,12 @@ const path = {
   },
 };
 
+const httpUri = {
+  type: "string",
+  format: "uri",
+  pattern: "^https?://",
+};
+
 const environment = {
   type: "object",
   additionalProperties: false,
@@ -134,9 +140,18 @@ const environment = {
   ],
   properties: {
     rpcHttpHost: {
-      type: "string",
-      format: "uri",
-      pattern: "^https?://",
+      oneOf: [
+        httpUri,
+        {
+          type: "array",
+          minItems: 1,
+          items: httpUri,
+        },
+      ],
+    },
+    pollingInterval: {
+      type: "integer",
+      minimum: 1,
     },
     rpcWsHost: {
       type: "string",

@@ -290,3 +290,33 @@ test("that all worker messages allow local (gateway) uris starting with 'http'",
   const r5 = c5(m5);
   t.true(r5);
 });
+
+test("environment accepts rpcHttpHost as a list and pollingInterval", (t) => {
+  const check = ajv.compile(configuration.properties.environment);
+  const environment = {
+    rpcHttpHost: ["https://opt-mainnet.example", "https://mainnet.optimism.io"],
+    pollingInterval: 5000,
+    rpcApiKey: "",
+    dataDir: "data",
+    ipfsHttpsGateway: "https://",
+    arweaveHttpsGateway: "https://",
+  };
+  t.true(check(environment), JSON.stringify(check.errors));
+  t.true(check({ ...environment, rpcHttpHost: "https://mainnet.optimism.io" }));
+});
+
+test("environment rejects an empty or non-http rpcHttpHost list", (t) => {
+  const check = ajv.compile(configuration.properties.environment);
+  const environment = {
+    dataDir: "data",
+    ipfsHttpsGateway: "https://",
+    arweaveHttpsGateway: "https://",
+  };
+  t.false(check({ ...environment, rpcHttpHost: [] }));
+  t.false(
+    check({ ...environment, rpcHttpHost: ["wss://mainnet.optimism.io"] })
+  );
+  t.false(
+    check({ ...environment, rpcHttpHost: "https://a", pollingInterval: 0 })
+  );
+});

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.5
+
+- `environment.rpcHttpHost` may be a single URL or a list of URLs, and `environment.pollingInterval` (integer, ms) is allowed. Needed for `@attestate/crawler-call-block-logs` >= 0.7.0, which polls over HTTP and rotates crawls across hosts.
+
 ## 0.7.4
 
 - Update to eth-fun@0.10.2 for Node.js 22 support
