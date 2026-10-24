@@ -413,6 +413,9 @@ export async function run(
 
     const unwatch = strategy.coordinator.module.watch({
       environment: config.environment,
+      // The extractor's args (e.g. eth_getLogs address and topics) let a
+      // coordinator skip blocks that can't hold anything to extract.
+      args: strategy.extractor?.args,
       onNewBlock: async (blockNumber) => {
         log(`Coordinator triggered with new block: ${blockNumber}`);
         try {

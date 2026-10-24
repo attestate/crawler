@@ -615,3 +615,51 @@ test("if prepareMessages filters invalid message and prepare message for worker"
 test("if filterValidWorkerMessages throws error on invalid input", async (t) => {
   t.throws(() => prepareMessages(null));
 });
+
+test.serial(
+  "run: passes environment and extractor args to the coordinator's watch",
+  async (t) => {
+    process.env.DATA_DIR = resolve("test/fixtures");
+    const args = {
+      start: 1,
+      address: "0x1111111111111111111111111111111111111111",
+      topics: [
+        "0xcd9cc59d1cc3aa17955023d009176720c8a383000a973ae2933c1cf6cbeee480",
+      ],
+    };
+    let unwatched = false;
+    const watched = new Promise((resolve) => {
+      const strategy = {
+        name: "watchStrategy",
+        coordinator: {
+          module: {
+            watch: (props) => {
+              resolve(props);
+              return () => (unwatched = true);
+            },
+          },
+        },
+        extractor: {
+          args,
+          output: { name: "non-existent-watch-output" },
+          module: {
+            init: () => ({ messages: [], write: null }),
+            update: () => ({ messages: [], write: null }),
+          },
+        },
+      };
+      class Worker extends EventEmitter {
+        postMessage() {}
+      }
+      const config = { environment: { gossip: "optimism" } };
+      // NOTE: run() keeps waiting for watch triggers and never resolves.
+      lifecycle.run(strategy, new Worker(), new EventEmitter(), config);
+    });
+
+    const props = await watched;
+    t.deepEqual(props.environment, { gossip: "optimism" });
+    t.is(props.args, args);
+    t.is(typeof props.onNewBlock, "function");
+    t.false(unwatched);
+  }
+);

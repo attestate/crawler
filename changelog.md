@@ -3,6 +3,8 @@
 ## 0.7.5
 
 - `environment.rpcHttpHost` may be a single URL or a list of URLs, and `environment.pollingInterval` (integer, ms) is allowed. Needed for `@attestate/crawler-call-block-logs` >= 0.7.0, which polls over HTTP and rotates crawls across hosts.
+- The coordinator's `watch()` also receives the extractor's `args` (`watch({ environment, args, onNewBlock })`), so it can skip blocks that can't hold anything to extract.
+- `environment.gossip` is allowed (`true`, a network name or `{ network, udpPort, maxPeers }`). `@attestate/crawler-call-block-logs` uses it to follow an OP Stack sequencer's block gossip instead of polling.
 
 ## 0.7.4
 

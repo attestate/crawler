@@ -320,3 +320,33 @@ test("environment rejects an empty or non-http rpcHttpHost list", (t) => {
     check({ ...environment, rpcHttpHost: "https://a", pollingInterval: 0 })
   );
 });
+
+test("environment accepts gossip settings", (t) => {
+  const check = ajv.compile(configuration.properties.environment);
+  const environment = {
+    rpcHttpHost: "https://mainnet.optimism.io",
+    dataDir: "data",
+    ipfsHttpsGateway: "https://",
+    arweaveHttpsGateway: "https://",
+  };
+  t.true(check(environment));
+  for (const gossip of [
+    true,
+    false,
+    "optimism",
+    { network: "optimism" },
+    { network: "optimism", udpPort: 9200, maxPeers: 30 },
+    { network: { chainId: 10, signer: "0x0", bootnodes: [] }, udpPort: 0 },
+  ]) {
+    t.true(check({ ...environment, gossip }), JSON.stringify(check.errors));
+  }
+  for (const gossip of [
+    "",
+    1,
+    { udpPort: 70000 },
+    { maxPeers: 0 },
+    { network: 10 },
+  ]) {
+    t.false(check({ ...environment, gossip }), JSON.stringify(gossip));
+  }
+});
