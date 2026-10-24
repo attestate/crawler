@@ -153,6 +153,25 @@ const environment = {
       type: "integer",
       minimum: 1,
     },
+    // Read by coordinators, e.g. @attestate/crawler-call-block-logs follows
+    // an OP Stack sequencer's block gossip when it's set: true, a network
+    // name or { network, udpPort, maxPeers }.
+    gossip: {
+      oneOf: [
+        { type: "boolean" },
+        { type: "string", minLength: 1 },
+        {
+          type: "object",
+          properties: {
+            network: {
+              oneOf: [{ type: "string", minLength: 1 }, { type: "object" }],
+            },
+            udpPort: { type: "integer", minimum: 0, maximum: 65535 },
+            maxPeers: { type: "integer", minimum: 1 },
+          },
+        },
+      ],
+    },
     rpcWsHost: {
       type: "string",
       format: "uri",

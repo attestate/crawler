@@ -276,14 +276,24 @@ For that, the first path exposes a property named ``coordinator``.
     }
   ];
 
-The coordinator uses WebSocket subscriptions for real-time block monitoring,
-which provides ~1-2 second latency for new blocks compared to polling-based
-approaches. For the coordinator to work, the ``module`` must export a
-``watch()`` function that subscribes to new block headers via WebSocket (e.g.,
-from Alchemy or Infura). The ``watch()`` function automatically handles
-reconnection and missed block detection. You can find an example
+For the coordinator to work, the ``module`` must export a ``function
+watch({ environment, args, onNewBlock })`` that returns an ``unwatch``
+function. The crawler calls it once after the first crawl with
+
+* ``environment``, the validated ``config.environment``,
+* ``args``, the ``args`` of the strategy's ``extractor`` (e.g. the
+  ``address`` and ``topics`` of an ``eth_getLogs`` filter, which a
+  coordinator can use to skip blocks that can't hold anything to extract),
+  and
+* ``onNewBlock(blockNumber)``, an async function that crawls all blocks
+  from the last scanned one up to ``blockNumber``.
+
+``unwatch()`` is called on ``SIGINT`` and ``SIGTERM``. You can find an example
 implementation in `@attestate/crawler-call-block-logs
-<https://github.com/attestate/crawler-call-block-logs/blob/main/src/state.mjs>`_.
+<https://github.com/attestate/crawler-call-block-logs/blob/main/src/state.mjs>`_,
+which polls ``eth_blockNumber`` every ``environment.pollingInterval`` ms or,
+with ``environment.gossip`` set, follows an OP Stack sequencer's block gossip
+and only triggers for blocks whose logs bloom matches the extractor's filter.
 
 With the ``archive`` option, we can define whether the result files in the
 ``DATA_DIR`` are deleted upon completing the task or if they're "archived". In
